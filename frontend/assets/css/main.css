@@ -1,0 +1,714 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: rgb(var(--v-theme-background, 255 255 255));
+  color: rgb(var(--v-theme-on-background, 15 23 42));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a { color: inherit; }
+
+.v-application {
+  background: rgb(var(--v-theme-background)) !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+.v-main {
+  background: rgb(var(--v-theme-background)) !important;
+}
+
+.v-navigation-drawer {
+  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+
+.v-app-bar {
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+
+/* Primary surface used by cards/tables default to theme surface */
+.v-card {
+  background: rgb(var(--v-theme-surface)) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* Tables in dark mode */
+.v-theme--dark .v-data-table {
+  background: rgb(var(--v-theme-surface)) !important;
+}
+.v-theme--dark .v-data-table .v-data-table__tr:hover > .v-data-table__td {
+  background: rgba(var(--v-theme-on-surface), 0.06) !important;
+}
+.v-theme--dark .v-data-table .v-data-table__th {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .v-field {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+}
+
+.v-theme--dark [style*="rgb(238, 242, 247)"] { border-color: rgba(var(--v-theme-on-surface), 0.10) !important; }  /* #eef2f7 */
+
+/* ── Scoped <style> block overrides for recurring component patterns ── */
+/* These target the common class names used across many components for
+   kanban boards, cost items, notes cards, line items, etc. that have
+   hardcoded light backgrounds/borders in their scoped styles. */
+
+/* Light surface cards / panels */
+.v-theme--dark .kanban-col,
+.v-theme--dark .cost-item,
+.v-theme--dark .line-item,
+.v-theme--dark .notes-card,
+.v-theme--dark .due-card,
+.v-theme--dark .assignee-preview,
+.v-theme--dark .kpi-card,
+.v-theme--dark .board-col,
+.v-theme--dark .duration-card,
+.v-theme--dark .kpi-item {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* Rental/signature step cards & wizard surfaces using white→f8fafc gradients */
+.v-theme--dark [class*="step-card"],
+.v-theme--dark [class*="signature-pad"],
+.v-theme--dark .rav-status--draft,
+.v-theme--dark .rav-status--active,
+.v-theme--dark .rav-status--completed {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* Hardcoded white surfaces in scoped styles → theme surface */
+.v-theme--dark .kpi-card,
+.v-theme--dark .issues-analytics-card {
+  background: rgb(var(--v-theme-surface)) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+
+/* Borders using #ccc / #e2e8f0 in scoped styles */
+.v-theme--dark .kanban-col {
+  border-top-color: rgba(var(--v-theme-on-surface), 0.15) !important;
+}
+
+/* Kanban cards, column heads, drop zones, board cards */
+.v-theme--dark .kanban-card,
+.v-theme--dark .kanban-col-head,
+.v-theme--dark .kanban-drop-zone,
+.v-theme--dark .board-card,
+.v-theme--dark .reservation-card,
+.v-theme--dark .task-card {
+  background: rgb(var(--v-theme-surface)) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .kanban-card:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.2) !important;
+}
+.v-theme--dark .kanban-card.critical {
+  border-left-color: #f87171 !important;
+}
+.v-theme--dark .kanban-title,
+.v-theme--dark .kanban-vehicle,
+.v-theme--dark .board-title,
+.v-theme--dark .task-title,
+.v-theme--dark .reservation-title {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .kanban-vehicle,
+.v-theme--dark .kanban-empty,
+.v-theme--dark .board-card-meta,
+.v-theme--dark .board-col-head {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .board-col-head {
+  background: rgb(var(--v-theme-surface)) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .kanban-drop-zone:hover {
+  background: rgba(99, 102, 241, 0.15) !important;
+}
+.v-theme--dark .board-col.drag-over {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+}
+.v-theme--dark .board-card.urgent {
+  border-left-color: #f87171 !important;
+}
+.v-theme--dark .board-card:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+}
+
+/* Detail drawer / cost-item sub-sections that use white surfaces */
+.v-theme--dark .detail-section,
+.v-theme--dark .detail-card,
+.v-theme--dark .info-row,
+.v-theme--dark .timeline-item {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* Signature pad / wizard step cards / rental agreement surfaces */
+.v-theme--dark .signature-pad,
+.v-theme--dark .step-card,
+.v-theme--dark .wizard-step,
+.v-theme--dark .review-section,
+.v-theme--dark .agr-section {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* Rental agreement status badges */
+.v-theme--dark .rav-status--draft   { background: rgba(148, 163, 184, 0.18) !important; color: #cbd5e1 !important; border-color: rgba(148, 163, 184, 0.3) !important; }
+.v-theme--dark .rav-status--active  { background: rgba(16, 185, 129, 0.18) !important; color: #6ee7b7 !important; border-color: rgba(16, 185, 129, 0.3) !important; }
+.v-theme--dark .rav-status--completed { background: rgba(14, 165, 233, 0.18) !important; color: #7dd3fc !important; border-color: rgba(14, 165, 233, 0.3) !important; }
+.v-theme--dark .rav-status--overdue  { background: rgba(239, 68, 68, 0.18) !important; color: #fca5a5 !important; border-color: rgba(239, 68, 68, 0.3) !important; }
+
+/* ── Analytics shared utility classes (Issues/WorkOrders/Services/Recalls/Garage/Vehicles) ── */
+/* Breakdown / stat cards */
+.v-theme--dark .breakdown-card,
+.v-theme--dark .kpi-card,
+.v-theme--dark .stat-card,
+.v-theme--dark .type-chip,
+.v-theme--dark .vehicle-chip,
+.v-theme--dark .filter-bar {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .stat-card.active,
+.v-theme--dark .type-chip.active {
+  border-color: rgba(99, 102, 241, 0.55) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18) !important;
+}
+
+/* Breakdown titles, labels, counts, costs → light text */
+.v-theme--dark .breakdown-title,
+.v-theme--dark .breakdown-label,
+.v-theme--dark .breakdown-count,
+.v-theme--dark .breakdown-cost,
+.v-theme--dark .breakdown-head,
+.v-theme--dark .breakdown-row {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .breakdown-count {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+
+/* Breakdown bar track → dark translucent fill */
+.v-theme--dark .breakdown-bar {
+  background: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+
+/* Hover/active row states */
+.v-theme--dark .breakdown-row:hover,
+.v-theme--dark .vehicle-row:hover,
+.v-theme--dark .breakdown-row.active,
+.v-theme--dark .bay-chip:hover {
+  background: rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+.v-theme--dark .breakdown-row.active {
+  background: rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Stat mini values / labels */
+.v-theme--dark .stat-mini-value,
+.v-theme--dark .stat-mini-label,
+.v-theme--dark .stat-sub,
+.v-theme--dark .kpi-sub,
+.v-theme--dark .kpi-label,
+.v-theme--dark .kpi-value,
+.v-theme--dark .mini-stat-value,
+.v-theme--dark .mini-stat-label {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .stat-mini-label,
+.v-theme--dark .stat-sub,
+.v-theme--dark .kpi-sub,
+.v-theme--dark .mini-stat-label,
+.v-theme--dark .mini-stat {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+
+/* Mini-stat card surfaces (VehicleAnalytics ownership grid) */
+.v-theme--dark .mini-stat {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+
+/* Dispatch analytics status cards & breakdowns */
+.v-theme--dark .status-card {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .status-title {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .status-label,
+.v-theme--dark .status-count,
+.v-theme--dark .ontrack-stats {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .status-row.active {
+  background: rgba(99, 102, 241, 0.15) !important;
+}
+.v-theme--dark .status-bar {
+  background: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .ontrack-pct {
+  color: #6ee7b7 !important;
+}
+
+/* Stat icons that use inline pastel bg + colored icon — keep icon color, darken bg */
+.v-theme--dark .stat-icon[style*="background"] {
+  background: rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+
+/* Kanban recalls variants */
+.v-theme--dark .kanban-column,
+.v-theme--dark .kanban-head {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .progress-card,
+.v-theme--dark .duration-card {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* Muted text in scoped styles */
+.v-theme--dark [class*="text-muted"],
+.v-theme--dark .muted-text,
+.v-theme--dark .text-secondary,
+.v-theme--dark .label-muted,
+.v-theme--dark .text-helper,
+.v-theme--dark .text-caption:not(.v-chip) {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+
+/* Hardcoded dark text in scoped styles → light (common heading/title classes) */
+.v-theme--dark .kpi-value,
+.v-theme--dark .kpi-label,
+.v-theme--dark .analytics-title,
+.v-theme--dark .section-title,
+.v-theme--dark .card-title,
+.v-theme--dark .detail-title,
+.v-theme--dark .step-title-lg {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* ── Tires: filter toolbar, spec grid, detail/rotation cards ── */
+.v-theme--dark .filter-toolbar {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .filter-field .v-field__outline__start,
+.v-theme--dark .filter-field .v-field__outline__end {
+  border-color: rgba(var(--v-theme-on-surface), 0.25) !important;
+}
+.v-theme--dark .filter-field .v-field--variant-outlined .v-field__outline__notch::before {
+  border-color: rgba(var(--v-theme-on-surface), 0.25) !important;
+}
+.v-theme--dark .spec-grid .spec-label {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .spec-grid .spec-value {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .swap-card {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .swap-card:hover {
+  border-color: rgba(167, 139, 250, 0.5) !important;
+}
+.v-theme--dark .swap-num {
+  background: rgba(124, 58, 237, 0.18) !important;
+  color: #d8b4fe !important;
+}
+.v-theme--dark .tire-avatar {
+  background: rgba(99, 102, 241, 0.15) !important;
+}
+.v-theme--dark .rotation-avatar {
+  background: rgba(168, 85, 247, 0.15) !important;
+}
+.v-theme--dark .tire-detail-card,
+.v-theme--dark .rotation-detail-card,
+.v-theme--dark .rotation-edit-card {
+  background: rgb(var(--v-theme-surface)) !important;
+}
+.v-theme--dark .tire-detail-left,
+.v-theme--dark .rotation-detail-left {
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .tire-detail-right,
+.v-theme--dark .rotation-detail-right,
+.v-theme--dark .rotation-edit-right {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+}
+.v-theme--dark .axle-preview-wrap,
+.v-theme--dark .rotation-axle-wrap {
+  background: rgba(var(--v-theme-on-surface), 0.06) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+
+/* ── IFTA: Net Tax by Quarter / Trips by Vehicle rows ── */
+.v-theme--dark .quarter-row {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+}
+
+/* ── Contacts: Top Cities chips ── */
+.v-theme--dark .city-chip {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.10) !important;
+}
+
+/* ── Drivers: Employment Status / MVR status chips ── */
+.v-theme--dark .status-chip {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .status-chip.active {
+  border-color: rgba(99, 102, 241, 0.55) !important;
+  background: rgba(99, 102, 241, 0.12) !important;
+}
+.v-theme--dark .status-chip:hover {
+  background: rgba(99, 102, 241, 0.10) !important;
+}
+
+/* ── Contact/Driver avatar text ── */
+.v-theme--dark .contact-avatar span,
+.v-theme--dark .driver-avatar span {
+  color: #a5b4fc !important;
+}
+
+/* ── Vehicles page: premium tab bar ── */
+.v-theme--dark .vehicles-tabs-wrap {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+}
+.v-theme--dark .vehicles-tabs {
+  background: rgba(var(--v-theme-on-surface), 0.08) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .vehicles-tab__count {
+  background: rgba(var(--v-theme-on-surface), 0.15) !important;
+}
+.v-theme--dark .vehicles-tab:hover {
+  color: rgb(var(--v-theme-on-surface)) !important;
+  background: rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+
+/* ── Vehicle detail/edit/new pages: header & wizard card ── */
+.v-theme--dark .page-header-bar {
+  background: rgb(var(--v-theme-surface)) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .page-header-title {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .page-wizard-card {
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ── VehicleViewWizard / VehicleFormWizard: stepper rail ── */
+.v-theme--dark .wizard-rail {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .step-item:hover {
+  background: rgba(99, 102, 241, 0.12) !important;
+}
+.v-theme--dark .step-item .step-icon {
+  background: rgba(var(--v-theme-on-surface), 0.08) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .step-item.active .step-title {
+  color: #a5b4fc !important;
+}
+.v-theme--dark .step-item .step-title {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .step-item .step-num {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+
+/* ── VehicleViewWizard: field values & content ── */
+.v-theme--dark .field-value {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .step-subtitle {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .spec-section-title {
+  color: #a5b4fc !important;
+}
+.v-theme--dark .spec-section-title::before {
+  opacity: 0.7;
+}
+.v-theme--dark .feature-group,
+.v-theme--dark .view-chip {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .view-chip {
+  color: #a5b4fc !important;
+}
+.v-theme--dark .reminder-row {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+
+/* ── Dispatch: JobDetailDrawer right-side drawer ── */
+.v-theme--dark .route-summary {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .route-connector {
+  background: rgba(var(--v-theme-on-surface), 0.25) !important;
+}
+.v-theme--dark .route-content .text-medium-emphasis,
+.v-theme--dark .route-content .text-caption {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .route-content .text-body-2 {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .info-item .text-caption,
+.v-theme--dark .info-item .text-medium-emphasis {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .info-item .text-body-2 {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .notes-block {
+  background: rgba(251, 191, 36, 0.08) !important;
+  border-color: rgba(251, 191, 36, 0.22) !important;
+}
+.v-theme--dark .notes-block .text-body-2 {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .stops-block {
+  background: rgb(var(--v-theme-surface)) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .stops-block .text-subtitle-2 {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .stop-item .text-body-2 {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .stop-item .text-caption,
+.v-theme--dark .stop-item .text-medium-emphasis {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+
+/* ── Dispatch: TrafficWeatherPanel & RouteOptimizationPanel ── */
+.v-theme--dark .leg-row {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+}
+.v-theme--dark .weather-card {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .weather-card .text-caption,
+.v-theme--dark .weather-card .text-medium-emphasis {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .weather-card .text-body-2,
+.v-theme--dark .weather-card .text-h6 {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* ── Dispatch: RouteOptimizationPanel map & steps ── */
+.v-theme--dark .route-opt-map {
+  background: rgb(var(--v-theme-on-surface-variant), 0.12) !important;
+}
+.v-theme--dark .route-steps-list .v-list-item-title {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+/* ── VehicleFormWizard: form surfaces ── */
+.v-theme--dark .vehicle-image-upload {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .vehicle-image-preview {
+  background: rgba(var(--v-theme-on-surface), 0.06) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.20) !important;
+}
+.v-theme--dark .field-group-label {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .seg-toggle {
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .seg-toggle-item {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+  background: rgba(var(--v-theme-on-surface), 0.03) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .seg-toggle-item:hover {
+  background: rgba(var(--v-theme-on-surface), 0.08) !important;
+}
+.v-theme--dark .color-chip-label {
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+}
+.v-theme--dark .color-chip.active .color-chip-label {
+  color: #a5b4fc !important;
+}
+.v-theme--dark .native-color-input {
+  border-color: rgba(var(--v-theme-on-surface), 0.20) !important;
+}
+.v-theme--dark .feature-chip {
+  color: rgb(var(--v-theme-on-surface)) !important;
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+.v-theme--dark .feature-chip:hover {
+  background: rgba(99, 102, 241, 0.10) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* ── Generic Vuetify component dark-mode refinements ── */
+/* Cards with inline border should use themed border */
+.v-theme--dark .v-card--border {
+  border-color: rgba(var(--v-theme-on-surface), 0.12) !important;
+}
+
+/* v-tabs / v-window content */
+.v-theme--dark .v-tabs-items,
+.v-theme--dark .v-window-item {
+  background: transparent !important;
+}
+
+/* Chips tonal variants — keep readable */
+.v-theme--dark .v-chip--variant-tonal {
+  backdrop-filter: brightness(1.1);
+}
+
+/* v-list subitems (menus, user dropdowns) */
+.v-theme--dark .v-list {
+  background: rgb(var(--v-theme-surface)) !important;
+}
+
+/* v-table / v-data-table density surface */
+.v-theme--dark .v-table,
+.v-theme--dark .v-data-table {
+  background: rgb(var(--v-theme-surface)) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.v-theme--dark .v-data-table .v-data-table__tr:hover > .v-data-table__td {
+  background: rgba(var(--v-theme-on-surface), 0.05) !important;
+}
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-leave-to {
+  opacity: 0;
+}
+
+/* Fix Vuetify 3 v-select/v-menu dropdowns: overlay content gets inline
+   `visibility: hidden; pointer-events: none;` when the menu is in its
+   "absolute" attach mode (inside v-card / v-window / v-dialog). This forces
+   the open menu to be visible and clickable so dropdowns work everywhere. */
+.v-overlay.v-menu.v-overlay--active > .v-overlay__content {
+  visibility: visible !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--v-theme-on-surface), 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+/* Smooth scroll for anchor nav */
+html { scroll-behavior: smooth; }
+
+/* Google Places autocomplete dropdown — render above Vuetify dialogs/z-index */
+.pac-container {
+  z-index: 10000 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16) !important;
+  border: 1px solid #e2e8f0 !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+.pac-item {
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  color: #0f172a !important;
+  cursor: pointer !important;
+}
+.pac-item:hover { background: #f1f5f9 !important; }
+.pac-item-selected, .pac-item-selected:hover {
+  background: #eef2ff !important;
+  color: #4f46e5 !important;
+}
+.pac-icon { display: none !important; }
+.pac-item-query { font-weight: 600 !important; }
+.pac-target-input::placeholder { color: #94a3b8; }
+
+/* SweetAlert2 themed buttons (match app indigo) */
+.swal-popup { border-radius: 16px !important; font-family: 'Inter', system-ui, sans-serif !important; }
+.swal-btn-confirm {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 20px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: background 0.15s ease !important;
+}
+.swal-btn-confirm:hover { background: #4f46e5 !important; }
+.swal-btn-cancel {
+  background: transparent !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 8px 20px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: background 0.15s ease !important;
+}
+.swal-btn-cancel:hover { background: #f8fafc !important; }
+
+
