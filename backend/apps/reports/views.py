@@ -243,6 +243,47 @@ class StandardReportsView(viewsets.ViewSet):
             for r in rows
         ]
 
+    @action(detail=False, methods=['get'], url_path='financial-pdf')
+    def financial_pdf(self, request):
+        """Generate a comprehensive PDF financial report with charts.
+
+        Page 1  — Cover / Business details (tenant name, address, KPIs)
+        Page 2+ — Revenue breakdown, cost breakdown, P&L, vehicle ROI table
+
+        Accepts the same ?start=&end= params as other financial endpoints.
+        Optional ?sections=business_details,executive_summary,revenue_charts,
+            cost_analysis,profit_loss,vehicle_roi to include only specific sections.
+        """
+        from apps.tenants.models import Tenant
+        from django.db import connection
+        from .pdf_report import generate_financial_pdf
+
+        since, until = self._period_bounds(request)
+        period_str = f'{since.strftime("%Y-%m-%d")} — {until.strftime("%Y-%m-%d")}'
+
+        # Resolve tenant from the current connection schema
+        try:
+            tenant = Tenant.objects.get(schema_name=connection.schema_name)
+        except Tenant.DoesNotExist:
+            tenant = None
+            period_str = period_str  # fallback
+
+        # Gather data by calling the internal methods
+        overview = self.financial_overview(request).data
+        revenue = self.revenue_breakdown(request).data
+        costs = self.cost_breakdown(request).data
+        roi = self.vehicle_roi(request).data
+
+        if tenant is None:
+            return Response({'detail': 'Tenant not found for current schema.'}, status=400)
+
+        # Parse optional sections parameter
+        sections_param = request.query_params.get('sections', '').strip()
+        sections = [s.strip() for s in sections_param.split(',') if s.strip()] if sections_param else None
+
+        return generate_financial_pdf(tenant, overview, revenue, costs, roi, period_str,
+                                     sections=sections)
+
     @action(detail=False, methods=['get'], url_path='financial-overview')
     def financial_overview(self, request):
         """Master financial dashboard: P&L summary, revenue/cost split, margins, trends."""
@@ -601,10 +642,12 @@ class StandardReportsView(viewsets.ViewSet):
 
         for v in Vehicle.objects.all().select_related('group'):
             # Revenue from rentals
-            revenue = float(RentalAgreement.objects.filter(
+            agreements_qs = RentalAgreement.objects.filter(
                 vehicle=v, status__in=['active', 'completed', 'overdue'],
                 created_at__gte=since, created_at__lt=until
-            ).aggregate(t=Sum('total_amount'))['t'] or Decimal('0'))
+            )
+            agreement_count = agreements_qs.count()
+            revenue = float(agreements_qs.aggregate(t=Sum('total_amount'))['t'] or Decimal('0'))
 
             # Costs
             fuel = float(FuelTransaction.objects.filter(vehicle=v, date__gte=since, date__lt=until)
@@ -630,6 +673,7 @@ class StandardReportsView(viewsets.ViewSet):
             data.append({
                 'vehicle': v.display_name, 'vin': v.vin,
                 'group': v.group.name if v.group else '',
+                'agreement_count': agreement_count,
                 'revenue': round(revenue, 2),
                 'fuel_cost': round(fuel, 2),
                 'service_cost': round(service, 2),

@@ -139,6 +139,111 @@ class TenantViewSet(viewsets.ModelViewSet):
         serializer.instance = tenant
 
     @action(detail=True, methods=['post'])
+    def reset(self, request, pk=None):
+        """Delete a tenant's schema and all its data, then recreate a fresh
+        schema with the same tenant metadata and a new admin user.
+
+        Supply the admin credentials in the request body::
+
+            {
+                "admin_email": "info@sareicarrentals.com",
+                "admin_password": "Samuel@2026",
+                "admin_first_name": "Samuel",
+                "admin_last_name": "Muriuki"
+            }
+        """
+        _ensure_public()
+        tenant = self.get_object()
+        schema_name = tenant.schema_name
+
+        # Snapshot tenant metadata before deletion
+        tenant_data = {
+            'short_name': tenant.short_name,
+            'full_name': tenant.full_name,
+            'email': tenant.email,
+            'country': tenant.country,
+            'mobile_number': tenant.mobile_number,
+            'address': tenant.address,
+            'latitude': tenant.latitude,
+            'longitude': tenant.longitude,
+            'logo': tenant.logo,
+            'currency': tenant.currency,
+            'is_active': tenant.is_active,
+        }
+
+        admin_email = (request.data.get('admin_email') or tenant.email).lower().strip()
+        admin_password = request.data.get('admin_password', '')
+        admin_first_name = request.data.get('admin_first_name', '')
+        admin_last_name = request.data.get('admin_last_name', '')
+
+        from django_tenants.utils import schema_exists
+
+        # 1 — Drop the PostgreSQL schema and delete the Tenant row
+        #     (also deletes Domain rows via cascade).
+        if schema_exists(schema_name):
+            from django.db import connection as conn
+            with conn.cursor() as cursor:
+                cursor.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
+
+        # Also delete any stray user with the same email in the public schema
+        # so login resolves to the tenant schema after recreation.
+        with schema_context('public'):
+            from django.db import connection as conn
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    'DELETE FROM users_user WHERE email = %s AND is_superuser = false AND is_staff = false',
+                    [admin_email]
+                )
+
+        # Delete subscription + tenant row
+        TenantSubscription.objects.filter(tenant=tenant).delete()
+        Domain.objects.filter(tenant=tenant).delete()
+        tenant.delete()
+
+        # 2 — Recreate the tenant (auto-creates a fresh schema)
+        new_tenant = Tenant.objects.create(
+            schema_name=schema_name,
+            **tenant_data,
+        )
+        Domain.objects.create(
+            domain=f'{schema_name}.localhost',
+            tenant=new_tenant,
+            is_primary=True,
+        )
+
+        # 3 — Create the admin user in the new schema
+        with schema_context(schema_name):
+            User.objects.create_user(
+                email=admin_email,
+                password=admin_password,
+                first_name=admin_first_name or 'Admin',
+                last_name=admin_last_name or 'User',
+                role=User.Role.ADMIN,
+                phone=tenant_data.get('mobile_number', ''),
+            )
+
+        # 4 — Free subscription
+        free_plan = BillingPlan.objects.get_or_create(
+            name='free',
+            defaults={
+                'description': 'Free Tier',
+                'price': 0,
+                'included_requests': 10000,
+                'rate_per_1000_requests': 0.007,
+            },
+        )[0]
+        TenantSubscription.objects.create(
+            tenant=new_tenant,
+            plan=free_plan,
+            status='active',
+        )
+
+        return Response({
+            'detail': f'Tenant "{schema_name}" reset successfully.',
+            'tenant': SuperAdminTenantSerializer(new_tenant).data,
+        })
+
+    @action(detail=True, methods=['post'])
     def suspend(self, request, pk=None):
         tenant = self.get_object()
         tenant.is_active = False
@@ -899,3 +1004,69 @@ class TenantTogglesView(APIView):
             'billing_currency': sub.billing_currency if sub else 'USD',
             'cycle_day': sub.cycle_day if sub else 1,
         })
+
+
+# ── Stray Users (public-schema cleanup) ─────────────────────
+
+class StrayUserView(APIView):
+    """List and delete non-superuser users that are accidentally living in the
+    public schema.
+
+    The public schema should only contain super-admin / staff accounts.
+    A regular tenant user sitting in ``public`` is a data error — login will
+    resolve to ``public`` instead of the correct tenant schema, causing
+    ``"No tenant for the current schema."`` errors.
+
+    GET  /api/superadmin/stray-users/          → list stray users
+    DELETE /api/superadmin/stray-users/<email>/  → delete a single stray user
+    """
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request):
+        _ensure_public()
+        with schema_context('public'):
+            strays = User.objects.filter(
+                is_superuser=False, is_staff=False
+            ).order_by('-date_joined')
+            data = []
+            for u in strays:
+                matched = Tenant.objects.filter(email__iexact=u.email).first()
+                data.append({
+                    'id': u.id,
+                    'email': u.email,
+                    'first_name': u.first_name,
+                    'last_name': u.last_name,
+                    'role': u.role,
+                    'is_active': u.is_active,
+                    'date_joined': u.date_joined.isoformat(),
+                    'suggested_schema': matched.schema_name if matched else None,
+                    'suggested_tenant': matched.short_name if matched else None,
+                })
+        return Response(data)
+
+    def delete(self, request, email):
+        _ensure_public()
+        email = (email or '').lower().strip()
+        with schema_context('public'):
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                return Response(
+                    {'detail': f'User "{email}" not found in the public schema.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            if user.is_superuser or user.is_staff:
+                return Response(
+                    {'detail': 'Cannot delete a super-admin/staff user from the public schema.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # Use raw SQL to avoid cascading to tenant-only tables (e.g.
+            # notifications_notificationpreference) that don't exist in the
+            # public schema.
+            from django.db import connection as conn
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    'DELETE FROM users_user WHERE id = %s', [user.id]
+                )
+        return Response(
+            {'detail': f'Stray user "{email}" deleted from the public schema.'}
+        )

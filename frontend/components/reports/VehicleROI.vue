@@ -38,6 +38,9 @@
           </div>
         </div>
       </template>
+      <template #item.agreement_count="{ value }">
+        <v-chip size="small" variant="tonal" color="info">{{ value || 0 }}</v-chip>
+      </template>
       <template #item.revenue="{ value }"><span class="font-weight-medium" style="color: #166534">{{ currencySymbol }}{{ formatNum(value) }}</span></template>
       <template #item.fuel_cost="{ value }"><span style="color: #d97706">{{ currencySymbol }}{{ formatNum(value) }}</span></template>
       <template #item.service_cost="{ value }"><span style="color: #2563eb">{{ currencySymbol }}{{ formatNum(value) }}</span></template>
@@ -169,6 +172,7 @@ const { currencySymbol } = useCurrency()
 const headers = [
   { title: '#', key: 'index', width: '50px', sortable: false, align: 'center' as const },
   { title: 'Vehicle', key: 'vehicle', width: '18%' },
+  { title: 'Agreements', key: 'agreement_count', align: 'center' as const, width: '90px' },
   { title: 'Revenue', key: 'revenue', align: 'end' as const },
   { title: 'Fuel', key: 'fuel_cost', align: 'end' as const },
   { title: 'Service', key: 'service_cost', align: 'end' as const },
@@ -233,9 +237,9 @@ function formatNum(n: number | undefined) {
 
 function exportCsv() {
   if (!props.vehicles?.length) return
-  const rows = ['Vehicle,VIN,Group,Revenue,Fuel,Service,Fixed,Total Cost,Net Profit,ROI %,Cost/Mile,Rev/Mile']
+  const rows = ['Vehicle,VIN,Group,Agreements,Revenue,Fuel,Service,Fixed,Total Cost,Net Profit,ROI %,Cost/Mile,Rev/Mile']
   for (const v of props.vehicles) {
-    rows.push(`"${v.vehicle}","${v.vin}","${v.group}",${v.revenue},${v.fuel_cost},${v.service_cost},${v.fixed_cost},${v.total_cost},${v.net_profit},${v.roi_pct},${v.cost_per_mile},${v.revenue_per_mile}`)
+    rows.push(`"${v.vehicle}","${v.vin}","${v.group}",${v.agreement_count || 0},${v.revenue},${v.fuel_cost},${v.service_cost},${v.fixed_cost},${v.total_cost},${v.net_profit},${v.roi_pct},${v.cost_per_mile},${v.revenue_per_mile}`)
   }
   const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)

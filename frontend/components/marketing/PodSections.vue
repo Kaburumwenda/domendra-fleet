@@ -1,14 +1,20 @@
 <template>
   <section v-for="(group, gi) in groups" :key="gi" class="fc-pods" :class="{ 'fc-pods--rev': gi % 2 === 1 }">
     <div class="fc-pods__inner">
-      <div class="fc-pods__copy">
+      <div class="fc-pods__copy reveal" :data-reveal-type="gi % 2 === 1 ? 'right' : 'left'">
         <SectionEyebrow :text="group.eyebrow" :icon="group.icon" />
         <h2>{{ group.title }}</h2>
         <p>{{ group.desc }}</p>
         <NuxtLink :to="group.path" class="fc-pods__cta">Explore <v-icon size="16">mdi-arrow-right</v-icon></NuxtLink>
       </div>
       <div class="fc-pods__grid">
-        <div v-for="pod in group.pods" :key="pod.title" class="fc-pod">
+        <div
+          v-for="(pod, pi) in group.pods"
+          :key="pod.title"
+          class="fc-pod reveal"
+          :data-reveal-delay="pi * 100"
+          :data-reveal-type="gi % 2 === 1 ? 'left' : 'right'"
+        >
           <div class="fc-pod__media" :style="{ background: pod.bg }">
             <v-icon size="40" :color="pod.color">{{ pod.icon }}</v-icon>
           </div>
@@ -21,6 +27,9 @@
 </template>
 
 <script setup lang="ts">
+const { register } = useScrollReveal()
+onMounted(() => register('.reveal'))
+
 const groups = [
   {
     eyebrow: 'Scale with control', icon: 'mdi-scale-balance', title: 'Apply consistent standards as you grow',

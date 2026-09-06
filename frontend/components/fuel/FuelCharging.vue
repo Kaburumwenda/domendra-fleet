@@ -1,29 +1,62 @@
 <template>
   <div class="d-flex flex-column ga-4">
     <!-- Summary -->
+    <div class="d-flex align-center flex-wrap ga-2 mb-2">
+      <v-btn-toggle v-model="datePreset" mandatory density="compact" color="primary" divided rounded="lg">
+        <v-btn value="today" size="small">Today</v-btn>
+        <v-btn value="7d" size="small">7d</v-btn>
+        <v-btn value="30d" size="small">30d</v-btn>
+        <v-btn value="90d" size="small">90d</v-btn>
+        <v-btn value="all" size="small">All</v-btn>
+        <v-btn value="custom" size="small" @click="openCustomDate">Custom…</v-btn>
+      </v-btn-toggle>
+      <v-chip v-if="customFrom || customTo" size="small" variant="tonal" color="primary" closable @click:close="clearCustom">
+        {{ customFrom || '…' }} → {{ customTo || '…' }}
+      </v-chip>
+    </div>
     <v-row dense>
       <v-col cols="6" md="3">
-        <v-card elevation="0" border class="pa-5" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%)">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">mdi-flash</v-icon><span class="text-caption text-white">Sessions (30d)</span></div>
-          <p class="text-h4 font-weight-bold text-white">{{ summary?.session_count || 0 }}</p>
+        <v-card elevation="0" border class="pa-5">
+          <div class="d-flex align-center ga-2 mb-2">
+            <div class="d-flex align-center justify-center" style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16,185,129,0.12)">
+              <v-icon color="success" size="small">mdi-flash</v-icon>
+            </div>
+            <span class="text-caption text-medium-emphasis">Sessions ({{ dateLabel }})</span>
+          </div>
+          <p class="text-h4 font-weight-bold text-high-emphasis">{{ summary?.session_count || 0 }}</p>
         </v-card>
       </v-col>
       <v-col cols="6" md="3">
-        <v-card elevation="0" border class="pa-5" style="background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%)">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">mdi-battery-charging</v-icon><span class="text-caption text-white">Total kWh</span></div>
-          <p class="text-h4 font-weight-bold text-white">{{ summary?.total_kwh?.toFixed(1) || '0' }}</p>
+        <v-card elevation="0" border class="pa-5">
+          <div class="d-flex align-center ga-2 mb-2">
+            <div class="d-flex align-center justify-center" style="width: 36px; height: 36px; border-radius: 10px; background: rgba(6,182,212,0.12)">
+              <v-icon color="cyan-darken-1" size="small">mdi-battery-charging</v-icon>
+            </div>
+            <span class="text-caption text-medium-emphasis">Total kWh</span>
+          </div>
+          <p class="text-h4 font-weight-bold text-high-emphasis">{{ summary?.total_kwh?.toFixed(1) || '0' }}</p>
         </v-card>
       </v-col>
       <v-col cols="6" md="3">
-        <v-card elevation="0" border class="pa-5" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">mdi-currency-usd</v-icon><span class="text-caption text-white">Total Cost</span></div>
-          <p class="text-h4 font-weight-bold text-white">{{ currencySymbol }}{{ summary?.total_cost?.toFixed(0) || '0' }}</p>
+        <v-card elevation="0" border class="pa-5">
+          <div class="d-flex align-center ga-2 mb-2">
+            <div class="d-flex align-center justify-center" style="width: 36px; height: 36px; border-radius: 10px; background: rgba(139,92,246,0.12)">
+              <v-icon color="deep-purple" size="small">mdi-currency-usd</v-icon>
+            </div>
+            <span class="text-caption text-medium-emphasis">Total Cost</span>
+          </div>
+          <p class="text-h4 font-weight-bold text-high-emphasis">{{ currencySymbol }}{{ summary?.total_cost?.toFixed(0) || '0' }}</p>
         </v-card>
       </v-col>
       <v-col cols="6" md="3">
-        <v-card elevation="0" border class="pa-5" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">mdi-chart-line</v-icon><span class="text-caption text-white">Avg /kWh</span></div>
-          <p class="text-h4 font-weight-bold text-white">{{ currencySymbol }}{{ summary?.avg_cost_per_kwh || '0' }}</p>
+        <v-card elevation="0" border class="pa-5">
+          <div class="d-flex align-center ga-2 mb-2">
+            <div class="d-flex align-center justify-center" style="width: 36px; height: 36px; border-radius: 10px; background: rgba(245,158,11,0.12)">
+              <v-icon color="amber-darken-1" size="small">mdi-chart-line</v-icon>
+            </div>
+            <span class="text-caption text-medium-emphasis">Avg /kWh</span>
+          </div>
+          <p class="text-h4 font-weight-bold text-high-emphasis">{{ currencySymbol }}{{ summary?.avg_cost_per_kwh || '0' }}</p>
         </v-card>
       </v-col>
     </v-row>
@@ -86,6 +119,31 @@
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Custom Date Range Dialog -->
+    <v-dialog v-model="customDateDialogVisible" max-width="420">
+      <v-card rounded="xl">
+        <AppModalHeader icon="mdi-calendar-range">Custom Date Range</AppModalHeader>
+        <v-card-text class="pt-4">
+          <v-row dense>
+            <v-col cols="12">
+              <v-text-field v-model="customFrom" type="date" label="From" density="comfortable" variant="outlined" prepend-inner-icon="mdi-calendar-start" hide-details="auto" />
+            </v-col>
+            <v-col cols="12">
+              <v-text-field v-model="customTo" type="date" label="To" density="comfortable" variant="outlined" prepend-inner-icon="mdi-calendar-end" hide-details="auto" />
+            </v-col>
+            <v-col cols="12" v-if="customDateError" class="pt-2">
+              <p class="text-caption text-error">{{ customDateError }}</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions class="px-4 pb-4">
+          <v-spacer />
+          <v-btn variant="text" @click="cancelCustomDate">Cancel</v-btn>
+          <v-btn color="primary" prepend-icon="mdi-magnify" @click="applyCustomDate">Apply</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Add/Edit Dialog -->
     <v-dialog v-model="dialogVisible" max-width="540" scroll-strategy="none">
@@ -154,6 +212,77 @@ const dialogVisible = ref(false)
 const saving = ref(false)
 const editingSession = ref<any>(null)
 
+// ---- Date filters ----
+const datePreset = ref('30d')
+const customFrom = ref('')
+const customTo = ref('')
+const customDateDialogVisible = ref(false)
+const customDateError = ref('')
+
+const dateLabel = computed(() => {
+  if (datePreset.value === 'custom' && (customFrom.value || customTo.value)) {
+    return `${customFrom.value || '…'} → ${customTo.value || '…'}`
+  }
+  return datePreset.value === 'all' ? 'All' : datePreset.value === 'today' ? 'Today' : `${datePreset.value}`
+})
+
+function dateRangeQuery() {
+  const now = new Date()
+  const params: Record<string, string> = {}
+  switch (datePreset.value) {
+    case 'today': {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+      params.date__gte = start.toISOString()
+      params.date__lte = end.toISOString()
+      break
+    }
+    case '7d': {
+      params.date__gte = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      break
+    }
+    case '30d': {
+      params.date__gte = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      break
+    }
+    case '90d': {
+      params.date__gte = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString()
+      break
+    }
+    case 'custom': {
+      if (customFrom.value) params.date__gte = new Date(customFrom.value + 'T00:00:00').toISOString()
+      if (customTo.value) params.date__lte = new Date(customTo.value + 'T23:59:59').toISOString()
+      break
+    }
+    case 'all':
+    default: break
+  }
+  return params
+}
+
+function openCustomDate() { customDateError.value = ''; customDateDialogVisible.value = true }
+function applyCustomDate() {
+  if (!customFrom.value && !customTo.value) { customDateError.value = 'Please select at least one date.'; return }
+  if (customFrom.value && customTo.value && customFrom.value > customTo.value) { customDateError.value = '"From" cannot be after "To".'; return }
+  customDateError.value = ''
+  customDateDialogVisible.value = false
+  datePreset.value = 'custom'
+  refreshAll()
+}
+function cancelCustomDate() {
+  customDateDialogVisible.value = false
+  customDateError.value = ''
+  if (!customFrom.value && !customTo.value) datePreset.value = '30d'
+}
+function clearCustom() {
+  customFrom.value = ''
+  customTo.value = ''
+  datePreset.value = '30d'
+  refreshAll()
+}
+
+watch(datePreset, () => refreshAll())
+
 const form = reactive<any>({
   vehicle: null, start_time: new Date().toISOString().slice(0, 16), end_time: '',
   energy_kwh: 0, cost: '0', start_soc: null, end_soc: null,
@@ -162,15 +291,15 @@ const form = reactive<any>({
 
 const { data: sessionData, pending, refresh: refreshSessions } = useAsyncData(
   'fuel-charging-tab',
-  () => fetchCharging().catch(() => ({ results: [] })) as Promise<any>,
-  { default: () => ({ results: [] }) }
+  () => fetchCharging(dateRangeQuery()).catch(() => ({ results: [] })) as Promise<any>,
+  { default: () => ({ results: [] }), watch: [datePreset] }
 )
 const sessions = computed(() => sessionData.value?.results || [])
 
 const { data: summaryData, refresh: refreshSummary } = useAsyncData(
   'fuel-charging-summary-tab',
-  () => fetchChargingSummary(30).catch(() => null),
-  { default: () => null }
+  () => fetchChargingSummary(dateRangeQuery()).catch(() => null),
+  { default: () => null, watch: [datePreset] }
 )
 const summary = computed(() => summaryData.value)
 
@@ -206,6 +335,8 @@ function editSession(s: any) {
   dialogVisible.value = true
 }
 
+function refreshAll() { refreshSessions(); refreshSummary() }
+
 async function save() {
   if (!form.vehicle) { $swal.fire({ icon: 'error', title: 'Vehicle required', timer: 3000 }); return }
   saving.value = true
@@ -214,7 +345,7 @@ async function save() {
     payload.start_time = new Date(payload.start_time).toISOString()
     if (payload.end_time) payload.end_time = new Date(payload.end_time).toISOString()
     await saveChargingSession(payload, editingSession.value?.id)
-    refreshSessions(); refreshSummary()
+    refreshAll()
     dialogVisible.value = false
     $swal.fire({ icon: 'success', title: 'Saved', timer: 1500 })
   } catch (e: any) {
@@ -224,7 +355,7 @@ async function save() {
 async function removeSession(s: any) {
   const r = await $swal.fire({ icon: 'warning', title: 'Delete session?', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#ef4444' })
   if (!r.isConfirmed) return
-  try { await deleteChargingSession(s.id); refreshSessions(); refreshSummary() } catch {}
+  try { await deleteChargingSession(s.id); refreshAll() } catch {}
 }
 
 // ---- Charts ----

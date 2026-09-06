@@ -4,7 +4,7 @@
       <div class="d-flex align-center ga-2">
         <div class="fleet-count-badge">
           <v-icon size="16" color="white">mdi-car-multiple</v-icon>
-          <span>{{ vehicles.length }}</span>
+          <span>{{ vehiclesData?.count || vehicles.length }}</span>
         </div>
         <span class="text-body-2 text-medium-emphasis">vehicles in fleet</span>
       </div>
@@ -98,16 +98,18 @@
         >Clear</v-btn>
       </div>
 
-      <v-data-table
+      <v-data-table-server
         :headers="headers"
-        :items="filteredVehicles"
+        :items="displayVehicles"
+        :items-length="totalCount"
         :loading="pending"
-        :items-per-page="20"
+        :items-per-page="itemsPerPage"
         :items-per-page-options="[10, 20, 50]"
-        :search="search"
         v-model="selected"
         show-select
         hover
+        @update:page="onPageChange"
+        @update:items-per-page="onItemsPerPageChange"
       >
         <template #top>
           <div v-if="selected.length" class="d-flex align-center justify-end pa-4">
@@ -197,11 +199,11 @@
             <p>No vehicles found. Click "Add Vehicle" to get started.</p>
           </div>
         </template>
-      </v-data-table>
+      </v-data-table-server>
 
       <div class="d-flex align-center justify-space-between pa-3 pt-0 flex-wrap ga-2">
         <span class="text-caption text-medium-emphasis">
-          {{ filteredVehicles.length }} of {{ vehicles.length }} vehicles
+          Showing {{ vehicles.length }} of {{ totalCount }} vehicles
           <span v-if="hasActiveFilters">· filtered</span>
         </span>
       </div>
@@ -213,6 +215,7 @@
 const { $api, $swal } = useNuxtApp()
 
 const search = ref('')
+const debouncedSearch = ref('')
 const selected = ref<any[]>([])
 const statusFilter = ref<string | null>(null)
 const fuelFilter = ref<string | null>(null)
@@ -220,13 +223,45 @@ const groupFilter = ref<number | null>(null)
 const locationFilter = ref<string | null>(null)
 const rentalFilter = ref<string | null>(null)
 
+// ── Server-side pagination state ──
+const page = ref(1)
+const itemsPerPage = ref(20)
+
+// Debounce search input
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+watch(search, (val) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    debouncedSearch.value = val
+  }, 400)
+})
+
+function buildQuery() {
+  const q: Record<string, any> = { page: page.value, page_size: itemsPerPage.value }
+  if (debouncedSearch.value.trim()) q.search = debouncedSearch.value.trim()
+  if (statusFilter.value) q.status = statusFilter.value
+  if (fuelFilter.value) q.fuel_type = fuelFilter.value
+  if (groupFilter.value) q.group = groupFilter.value
+  // location & rental are not backend filter fields, so they're handled client-side
+  return q
+}
+
+function onPageChange(newPage: number) {
+  page.value = newPage
+}
+
+function onItemsPerPageChange(newSize: number) {
+  itemsPerPage.value = newSize
+  page.value = 1
+}
+
 const rentalFilterOptions = [
   { value: 'on_rent', label: 'Assigned' },
   { value: 'available', label: 'Available' },
 ]
 
 const headers = [
-  { title: 'Vehicle', key: 'display_name', sortable: true },
+  { title: 'Vehicle', key: 'display_name', sortable: true, width: '260px' },
   { title: 'Plate', key: 'license_plate', sortable: true, width: '130px' },
   { title: 'Status', key: 'status', sortable: true, width: '150px' },
   { title: 'Rental', key: 'rental_status', sortable: true, width: '150px' },
@@ -239,9 +274,14 @@ const headers = [
 ]
 
 const { data: vehiclesData, pending, refresh } = useAsyncData('vehicles', () =>
-  $api('/vehicles/vehicles/'), { default: () => ({ results: [], count: 0 }) }
+  $api('/vehicles/vehicles/', { query: buildQuery() }),
+  {
+    default: () => ({ results: [], count: 0 }),
+    watch: [page, itemsPerPage, debouncedSearch, statusFilter, fuelFilter, groupFilter],
+  },
 )
-const vehicles = computed(() => vehiclesData.value?.results || vehiclesData.value || [])
+const vehicles = computed(() => vehiclesData.value?.results || [])
+const totalCount = computed(() => vehiclesData.value?.count || 0)
 
 const { data: groupsData } = useAsyncData('vehicle-groups-filter', () =>
   $api('/vehicles/groups/').catch(() => ({ results: [], count: 0 })),
@@ -294,23 +334,25 @@ function clearFilters() {
   groupFilter.value = null
   locationFilter.value = null
   rentalFilter.value = null
+  page.value = 1
 }
 
-const filteredVehicles = computed(() => {
-  const status = statusFilter.value
-  const fuel = fuelFilter.value
-  const group = groupFilter.value
+// Location & rental filters are not backend-supported, so filter client-side
+// on top of the server-returned page
+const displayVehicles = computed(() => {
   const location = locationFilter.value
   const rental = rentalFilter.value
-  if (!status && !fuel && !group && !location && !rental) return vehicles.value
+  if (!location && !rental) return vehicles.value
   return vehicles.value.filter((v: any) => {
-    if (status && v.status !== status) return false
-    if (fuel && v.fuel_type !== fuel) return false
-    if (group && v.group !== group) return false
     if (location && v.location !== location) return false
     if (rental && v.rental_status !== rental) return false
     return true
   })
+})
+
+// Reset to page 1 when search or backend filters change
+watch([debouncedSearch, statusFilter, fuelFilter, groupFilter], () => {
+  page.value = 1
 })
 
 function openView(v: any) {

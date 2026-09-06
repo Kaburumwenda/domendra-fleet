@@ -354,9 +354,17 @@ async function submit() {
     await uploadDoc(licenseFile.value, 'license', 'Driving License', driverId)
     await uploadDoc(nationalIdFile.value, 'license', 'National ID', driverId, true)
     emit('saved', driverId)
-  } catch (e) {
-    console.error(e)
-    alert('Failed to save driver. Check the console for details.')
+  } catch (e: any) {
+    console.error('Driver save failed:', e)
+    let msg = 'Failed to save driver.'
+    if (e?.data) {
+      if (typeof e.data === 'string') msg = e.data
+      else if (e.data.detail) msg = e.data.detail
+      else if (typeof e.data === 'object') msg = JSON.stringify(e.data)
+    } else if (e?.message) {
+      msg = e.message
+    }
+    alert(msg)
   } finally { saving.value = false }
 }
 

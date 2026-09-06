@@ -18,8 +18,49 @@
         <v-btn variant="tonal" prepend-icon="mdi-refresh" @click="refreshAll" :loading="refreshing">
           <span class="hidden-sm-and-down">Refresh</span>
         </v-btn>
+        <v-btn variant="flat" color="error" prepend-icon="mdi-file-pdf-box" @click="openPdfModal">
+          <span class="hidden-sm-and-down">PDF Report</span>
+        </v-btn>
       </div>
     </div>
+
+    <!-- ── PDF Export Modal ── -->
+    <v-dialog v-model="pdfModal" max-width="560" persistent>
+      <v-card rounded="xl">
+        <v-card-title class="d-flex align-center ga-2">
+          <v-icon color="error">mdi-file-pdf-box</v-icon>
+          <span class="text-h6 font-weight-bold">Export PDF Report</span>
+        </v-card-title>
+        <v-card-subtitle class="text-caption">
+          Select the sections to include in the financial report PDF
+        </v-card-subtitle>
+        <v-divider />
+        <v-card-text class="pt-4">
+          <v-alert type="info" variant="tonal" density="compact" class="mb-4 text-caption">
+            Selected period: <b>{{ periodLabel }}</b>
+          </v-alert>
+          <div class="d-flex flex-column ga-1">
+            <v-checkbox v-for="sec in pdfSectionOptions" :key="sec.key" v-model="pdfSections" :value="sec.key" hide-details density="compact" color="error">
+              <template #label>
+                <span><v-icon :icon="sec.icon" size="16" /> {{ sec.label }}</span>
+              </template>
+            </v-checkbox>
+          </div>
+          <div class="d-flex ga-2 mt-2">
+            <v-btn variant="text" size="small" @click="selectAllSections">Select All</v-btn>
+            <v-btn variant="text" size="small" @click="clearSections">Clear All</v-btn>
+          </div>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="pdfModal = false">Cancel</v-btn>
+          <v-btn variant="flat" color="error" prepend-icon="mdi-download" :loading="pdfLoading" :disabled="pdfSections.length === 0" @click="downloadPdf">
+            Generate PDF
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- ── Date Filter Bar ── -->
     <v-card elevation="0" border rounded="lg" class="pa-4">
@@ -141,6 +182,29 @@ const tab = ref('dashboard')
 const activePreset = ref('last_30')
 const seeding = ref(false)
 const refreshing = ref(false)
+const pdfLoading = ref(false)
+const pdfModal = ref(false)
+const pdfSections = ref([
+  'business_details', 'executive_summary', 'revenue_charts',
+  'cost_analysis', 'profit_loss', 'vehicle_roi',
+])
+const pdfSectionOptions = [
+  { key: 'business_details', label: 'Business Details (Cover Page)', icon: 'mdi-office-building' },
+  { key: 'executive_summary', label: 'Executive Summary (KPIs, Trends, Ratios)', icon: 'mdi-chart-line' },
+  { key: 'revenue_charts', label: 'Revenue Charts (Customer, Vehicle, Trend)', icon: 'mdi-chart-bar' },
+  { key: 'cost_analysis', label: 'Cost Analysis (Pie Chart, By Vehicle)', icon: 'mdi-chart-pie' },
+  { key: 'profit_loss', label: 'Profit and Loss Statement', icon: 'mdi-cash-multiple' },
+  { key: 'vehicle_roi', label: 'Vehicle ROI Analysis', icon: 'mdi-car-multiple' },
+]
+function selectAllSections() {
+  pdfSections.value = pdfSectionOptions.map(s => s.key)
+}
+function clearSections() {
+  pdfSections.value = []
+}
+function openPdfModal() {
+  pdfModal.value = true
+}
 
 // ── Date presets ──
 const datePresets = [
@@ -335,6 +399,31 @@ async function seedDemo() {
     $swal?.fire?.({ icon: 'error', title: e?.response?._data?.detail || 'Failed to seed data', toast: true, timer: 3000, position: 'top-end' })
   } finally { seeding.value = false }
 }
+
+async function downloadPdf() {
+  if (pdfSections.value.length === 0) return
+  pdfLoading.value = true
+  try {
+    const sections = pdfSections.value.join(',')
+    const res: any = await $api('/reports/financial/pdf/' + queryStr.value + '&sections=' + sections, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(res)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `financial_report_${activePreset.value}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+    pdfModal.value = false
+  } catch (e: any) {
+    $swal?.fire?.({ icon: 'error', title: 'Failed to generate PDF', toast: true, timer: 3000, position: 'top-end' })
+  } finally { pdfLoading.value = false }
+}
+
+const periodLabel = computed(() => {
+  const m = datePresets.find(p => p.value === activePreset.value)
+  return m ? m.label : 'Current Period'
+})
 
 useHead({ title: 'Financial Reports' })
 </script>

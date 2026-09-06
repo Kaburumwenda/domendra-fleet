@@ -41,8 +41,9 @@ export function useFuelApi() {
   function fetchCharging(params: Record<string, any> = {}) {
     return $api('/fuel/charging/', { query: params })
   }
-  function fetchChargingSummary(days = 30) {
-    return $api('/fuel/charging/summary/', { query: { days } })
+  function fetchChargingSummary(params: Record<string, any> | number = 30) {
+    const query = typeof params === 'number' ? { days: params } : params
+    return $api('/fuel/charging/summary/', { query })
   }
   function saveChargingSession(payload: any, id?: number) {
     return id
@@ -56,8 +57,9 @@ export function useFuelApi() {
   function fetchIdling(params: Record<string, any> = {}) {
     return $api('/fuel/idling/', { query: params })
   }
-  function fetchIdlingSummary(days = 30) {
-    return $api('/fuel/idling/summary/', { query: { days } })
+  function fetchIdlingSummary(params: Record<string, any> | number = 30) {
+    const query = typeof params === 'number' ? { days: params } : params
+    return $api('/fuel/idling/summary/', { query })
   }
   function saveIdlingEvent(payload: any, id?: number) {
     return id

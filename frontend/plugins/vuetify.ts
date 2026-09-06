@@ -12,7 +12,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       defaultSet: 'mdi',
     },
     theme: {
-      defaultTheme: 'dark',
+      defaultTheme: 'light',
       themes: {
         light: {
           dark: false,

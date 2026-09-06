@@ -1,6 +1,6 @@
 <template>
   <section class="fc-quote">
-    <div class="fc-quote__inner">
+    <div class="fc-quote__inner reveal" data-reveal-type="fade">
       <v-icon size="48" color="#c7d2fe" class="fc-quote__mark">mdi-format-quote-open</v-icon>
       <transition name="fc-quote-fade" mode="out-in">
         <div :key="active" class="fc-quote__slide">
@@ -42,7 +42,11 @@ const testimonials = [
 ]
 
 let timer: any = null
-onMounted(() => { timer = setInterval(() => { active.value = (active.value + 1) % testimonials.length }, 6000) })
+const { register } = useScrollReveal()
+onMounted(() => {
+  register('.reveal')
+  timer = setInterval(() => { active.value = (active.value + 1) % testimonials.length }, 6000)
+})
 onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>
 

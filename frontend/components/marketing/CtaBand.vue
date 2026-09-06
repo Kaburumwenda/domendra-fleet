@@ -1,6 +1,6 @@
 <template>
   <section class="fc-cta">
-    <div class="fc-cta__inner">
+    <div class="fc-cta__inner reveal" data-reveal-type="scale">
       <span class="fc-cta__pill"><v-icon size="14" color="#16a34a">mdi-circle-medium</v-icon> {{ trialing }} companies trialing Domendra in the last 24 hours</span>
       <h2>Ready to get started?</h2>
       <p>Join thousands of satisfied customers running smarter fleets. Questions? Call us at +254 739 123 995.</p>
@@ -13,8 +13,13 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+
 const trialing = ref(0)
+const { register } = useScrollReveal()
+
 onMounted(() => {
+  register('.reveal')
   const dur = 1600; const target = 247; const start = performance.now()
   const tick = (t: number) => {
     const p = Math.min(1, (t - start) / dur)

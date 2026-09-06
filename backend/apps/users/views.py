@@ -164,6 +164,14 @@ class UserCreateView(APIView):
         if not checker.has_permission(request, self) and not request.user.is_superuser:
             return Response({'detail': 'You do not have permission to create users.'}, status=status.HTTP_403_FORBIDDEN)
 
+        # Guard: never create a tenant user in the public schema.
+        if connection.schema_name == 'public':
+            return Response(
+                {'detail': 'Users cannot be created in the public schema. '
+                 'Use the super-admin panel to manage tenant users.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         from .serializers import UserCreateSerializer
         serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -13,16 +13,24 @@
         {{ customFrom || '…' }} → {{ customTo || '…' }}
       </v-chip>
       <v-spacer />
-      <v-btn v-can="'fuel:export'" variant="tonal" size="small" prepend-icon="mdi-download" @click="exportData">Export CSV</v-btn>
+      <div class="d-flex ga-2">
+        <v-btn v-can="'fuel:export'" variant="tonal" color="primary" size="small" prepend-icon="mdi-file-pdf-box" :loading="pdfLoading" @click="exportFleetPDF">Export PDF</v-btn>
+        <v-btn v-can="'fuel:export'" variant="tonal" size="small" prepend-icon="mdi-download" @click="exportData">Export CSV</v-btn>
+      </div>
     </div>
 
     <!-- KPI Row -->
     <v-row dense>
       <v-col cols="6" md="3" v-for="(kpi, i) in kpis" :key="i">
-        <v-card elevation="0" border class="pa-5" :style="kpi.bg">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">{{ kpi.icon }}</v-icon><span class="text-caption text-white">{{ kpi.label }}</span></div>
-          <p class="text-h5 font-weight-bold text-white">{{ kpi.prefix }}{{ kpi.value }}</p>
-          <p v-if="kpi.sub" class="text-caption text-white" style="opacity: 0.8">{{ kpi.sub }}</p>
+        <v-card elevation="0" border class="pa-5 h-100">
+          <div class="d-flex align-center ga-2 mb-2">
+            <div class="d-flex align-center justify-center" :style="{ width: '36px', height: '36px', borderRadius: '10px', background: kpi.iconBg }">
+              <v-icon :color="kpi.color" size="small">{{ kpi.icon }}</v-icon>
+            </div>
+            <span class="text-caption text-medium-emphasis">{{ kpi.label }}</span>
+          </div>
+          <p class="text-h5 font-weight-bold text-high-emphasis">{{ kpi.prefix }}{{ kpi.value }}</p>
+          <p v-if="kpi.sub" class="text-caption text-medium-emphasis mt-1">{{ kpi.sub }}</p>
         </v-card>
       </v-col>
     </v-row>
@@ -36,6 +44,69 @@
         <DashboardChart :option="fuelTypeOption" title="By Fuel Type" icon="mdi-fuel" height="300px" />
       </v-col>
     </v-row>
+
+    <!-- Vehicle Fuel Summary Table -->
+    <v-card elevation="0" border rounded="lg" class="overflow-hidden">
+      <div class="d-flex align-center justify-space-between pa-4 pb-2">
+        <h3 class="text-subtitle-1 font-weight-medium d-flex align-center ga-2" style="color: #475569">
+          <v-icon size="small" color="primary">mdi-car-multiple</v-icon>
+          Vehicle Fuel Summary
+        </h3>
+        <div class="d-flex ga-2">
+          <v-btn v-can="'fuel:export'" variant="tonal" color="primary" size="small" prepend-icon="mdi-file-pdf-box" :loading="pdfLoading" @click="exportFleetPDF">Export PDF</v-btn>
+          <v-btn v-can="'fuel:export'" variant="tonal" size="small" prepend-icon="mdi-download" @click="exportData">Export CSV</v-btn>
+        </div>
+      </div>
+      <v-data-table
+        :headers="vehicleHeaders"
+        :items="vehicleRows"
+        :loading="false"
+        hover
+        density="comfortable"
+        :items-per-page="10"
+      >
+        <template #item.vehicle="{ item }">
+          <div class="d-flex align-center ga-2">
+            <span class="font-weight-medium">{{ (item as any).vehicle }}</span>
+          </div>
+        </template>
+        <template #item.total_cost="{ value }">
+          <span class="font-weight-medium">{{ currencySymbol }}{{ Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+        </template>
+        <template #item.total_gallons="{ value }">
+          {{ Number(value).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }}
+        </template>
+        <template #item.distance="{ value, item }">
+          <span v-if="value != null" class="font-weight-medium">{{ Number(value).toLocaleString() }} {{ (item as any).unit === 'liters' ? 'km' : 'mi' }}</span>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+        <template #item.avg_mpg="{ value }">
+          <span v-if="value" class="text-success font-weight-medium">{{ Number(value).toFixed(1) }}</span>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+        <template #item.min_odometer="{ value, item }">
+          <span v-if="value != null">{{ Number(value).toLocaleString() }} {{ (item as any).unit === 'liters' ? 'km' : 'mi' }}</span>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+        <template #item.max_odometer="{ value, item }">
+          <span v-if="value != null">{{ Number(value).toLocaleString() }} {{ (item as any).unit === 'liters' ? 'km' : 'mi' }}</span>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+        <template #item.cost_per_distance="{ value }">
+          <span v-if="value != null">{{ currencySymbol }}{{ Number(value).toFixed(2) }}</span>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+        <template #item.actions="{ item }">
+          <v-btn icon="mdi-eye-outline" size="x-small" variant="text" color="info" title="View vehicle fuel details" @click="navigateTo(`/app/fuel/vehicle/${(item as any).vehicle_id}`)" />
+        </template>
+        <template #no-data>
+          <div class="text-center py-8 text-medium-emphasis">
+            <v-icon size="40" class="mb-2">mdi-car-off</v-icon>
+            <p class="text-body-2">No vehicle fuel data for this period.</p>
+          </div>
+        </template>
+      </v-data-table>
+    </v-card>
 
     <!-- Charts row 2 -->
     <v-row dense>
@@ -117,6 +188,7 @@ const customFrom = ref('')
 const customTo = ref('')
 const customDateDialogVisible = ref(false)
 const customDateError = ref('')
+const pdfLoading = ref(false)
 
 watch(period, (val) => {
   if (val !== 'custom') emit('updatePeriod', Number(val))
@@ -165,24 +237,61 @@ const kpis = computed(() => [
   {
     label: 'Total Cost', value: Number(a.value.total_cost || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }),
     prefix: currencySymbol.value, icon: 'mdi-currency-usd', sub: `${a.value.transaction_count || 0} txns`,
-    bg: 'background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%)',
+    color: 'primary', iconBg: 'rgba(99,102,241,0.12)',
   },
   {
     label: 'Total Volume', value: Number(a.value.total_gallons || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }),
     prefix: '', icon: 'mdi-gauge', sub: 'gallons / liters',
-    bg: 'background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+    color: 'amber-darken-1', iconBg: 'rgba(245,158,11,0.12)',
   },
   {
     label: 'Avg Price/Unit', value: a.value.avg_price_per_gallon || '0',
     prefix: currencySymbol.value, icon: 'mdi-tag-outline', sub: 'weighted average',
-    bg: 'background: linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+    color: 'success', iconBg: 'rgba(16,185,129,0.12)',
   },
   {
     label: 'Max Transaction', value: Number(a.value.max_transaction_cost || 0).toFixed(0),
     prefix: currencySymbol.value, icon: 'mdi-arrow-up-bold', sub: 'single fill-up',
-    bg: 'background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+    color: 'deep-purple', iconBg: 'rgba(139,92,246,0.12)',
   },
 ])
+
+// ---- Vehicle summary table ----
+const vehicleHeaders = [
+  { title: '#', key: 'index', width: '50px', sortable: false },
+  { title: 'Vehicle', key: 'vehicle', sortable: true, minWidth: '160px' },
+  { title: 'Fill-ups', key: 'fill_count', width: '90px', sortable: true, align: 'center' as const },
+  { title: 'Total Volume', key: 'total_gallons', width: '120px', sortable: true },
+  { title: 'Total Cost', key: 'total_cost', width: '130px', sortable: true },
+  { title: 'Cost / Dist', key: 'cost_per_distance', width: '120px', sortable: true },
+  { title: 'Distance', key: 'distance', width: '120px', sortable: true },
+  { title: 'Min Odo', key: 'min_odometer', width: '120px', sortable: true },
+  { title: 'Max Odo', key: 'max_odometer', width: '120px', sortable: true },
+  { title: 'Avg MPG', key: 'avg_mpg', width: '90px', sortable: true },
+  { title: '', key: 'actions', width: '60px', sortable: false },
+]
+
+const vehicleRows = computed(() => {
+  const list = a.value.by_vehicle || []
+  return list.map((v: any, i: number) => {
+    const name = `${v.vehicle__make || ''} ${v.vehicle__model || ''}`.trim() || v.vehicle__license_plate || '—'
+    const dist = v.distance ?? null
+    const totalCost = Number(v.total_cost || 0)
+    return {
+      index: i + 1,
+      vehicle_id: v.vehicle_id,
+      vehicle: name,
+      fill_count: v.fill_count || 0,
+      total_gallons: v.total_gallons || 0,
+      total_cost: totalCost,
+      cost_per_distance: dist ? totalCost / dist : null,
+      distance: dist,
+      min_odometer: v.min_odometer ?? null,
+      max_odometer: v.max_odometer ?? null,
+      avg_mpg: v.avg_mpg ?? null,
+    }
+  })
+})
 
 const dailyCostOption = computed(() => {
   const daily = a.value.daily_trend || []
@@ -264,7 +373,7 @@ const topVehiclesOption = computed(() => {
   const vehicles = (a.value.by_vehicle || []).slice(0, 10)
   return {
     tooltip: { trigger: 'axis' },
-    grid: { left: 140, right: 20, top: 10, bottom: 30 },
+    grid: { left: 180, right: 20, top: 10, bottom: 30 },
     xAxis: { type: 'value', axisLabel: { color: axisLabelColor.value, fontSize: 11 }, splitLine: { lineStyle: { color: splitLineColor.value } } },
     yAxis: {
       type: 'category', inverse: true,
@@ -286,7 +395,7 @@ const topStationsOption = computed(() => {
   const stations = (a.value.by_station || []).slice(0, 10)
   return {
     tooltip: { trigger: 'axis' },
-    grid: { left: 140, right: 20, top: 10, bottom: 30 },
+    grid: { left: 180, right: 20, top: 10, bottom: 30 },
     xAxis: { type: 'value', axisLabel: { color: axisLabelColor.value, fontSize: 11 }, splitLine: { lineStyle: { color: splitLineColor.value } } },
     yAxis: {
       type: 'category', inverse: true,
@@ -384,14 +493,19 @@ const vehicleTypePieOption = computed(() => {
 })
 
 function exportData() {
-  const rows = (a.value.by_vehicle || []).map((v: any, i: number) => [
-    i + 1,
-    `${v.vehicle__make || ''} ${v.vehicle__model || ''}`.trim() || v.vehicle__license_plate,
+  const rows = vehicleRows.value.map((v: any) => [
+    v.index,
+    v.vehicle,
+    v.fill_count,
     Number(v.total_gallons).toFixed(2),
     Number(v.total_cost).toFixed(2),
-    v.fill_count,
+    v.distance != null ? v.distance : '',
+    v.min_odometer != null ? v.min_odometer : '',
+    v.max_odometer != null ? v.max_odometer : '',
+    v.avg_mpg ? Number(v.avg_mpg).toFixed(1) : '',
+    v.cost_per_distance != null ? Number(v.cost_per_distance).toFixed(2) : '',
   ])
-  rows.unshift(['#', 'Vehicle', 'Gallons', 'Cost', 'Fill-ups'])
+  rows.unshift(['#', 'Vehicle', 'Fill-ups', 'Volume', 'Cost', 'Distance', 'Min Odo', 'Max Odo', 'Avg MPG', 'Cost/Distance'])
   const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
@@ -400,5 +514,47 @@ function exportData() {
   link.download = `fuel-vehicle-report-${new Date().toISOString().slice(0, 10)}.csv`
   link.click()
   URL.revokeObjectURL(url)
+}
+
+function buildDateParams(): Record<string, string> {
+  const params: Record<string, string> = {}
+  if (period.value === 'custom' && (customFrom.value || customTo.value)) {
+    if (customFrom.value) params.date__gte = new Date(customFrom.value + 'T00:00:00').toISOString()
+    if (customTo.value) params.date__lte = new Date(customTo.value + 'T23:59:59').toISOString()
+  } else if (period.value !== 'custom') {
+    params.days = period.value
+  }
+  return params
+}
+
+async function exportFleetPDF() {
+  pdfLoading.value = true
+  try {
+    const auth = useAuthStore()
+    const token = auth.accessToken || localStorage.getItem('fc_access') || ''
+    const tenantSchema = auth.tenantSchema || localStorage.getItem('fc_tenant') || ''
+    const qp = buildDateParams()
+    const qs = new URLSearchParams(qp).toString()
+    const url = `${useRuntimeConfig().public.apiBase}/fuel/transactions/fleet-pdf/${qs ? '?' + qs : ''}`
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-tenant-schema': tenantSchema,
+      },
+    })
+    if (!res.ok) throw new Error('Failed to generate PDF')
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = `fleet-fuel-report-${new Date().toISOString().slice(0, 10)}.pdf`
+    link.click()
+    URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    console.error('Fleet PDF export error:', e)
+  } finally {
+    pdfLoading.value = false
+  }
 }
 </script>

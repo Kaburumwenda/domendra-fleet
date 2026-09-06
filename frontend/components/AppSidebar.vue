@@ -227,6 +227,7 @@ const navItems: NavItem[] = [
       { path: '/app/telematics', label: 'Telematics & GPS', icon: 'mdi-crosshairs-gps', perm: 'telematics:view' },
       { path: '/app/locations', label: 'Locations & Geofences', icon: 'mdi-map-marker-multiple', perm: 'locations:view' },
       { path: '/app/dispatch', label: 'Dispatch', icon: 'mdi-map-outline', perm: 'dispatch:view' },
+      { path: '/app/transfers', label: 'Transfers', icon: 'mdi-car-multiple', perm: 'transfers:view' },
       { path: '/app/vehicle-monitor', label: 'Vehicle Monitor', icon: 'mdi-monitor-dashboard', perm: 'vehicles:view' },
       { path: '/app/rentals', label: 'Car Hire & Rental', icon: 'mdi-car-key', perm: 'rentals:view' },
       { path: '/app/rentals/driver-hire-rates', label: 'Driver Hire Rates', icon: 'mdi-account-cash-outline', perm: 'rentals:view' },

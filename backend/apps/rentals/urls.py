@@ -71,6 +71,7 @@ urlpatterns = [
     path('invoices/', InvoiceViewSet.as_view({'get': 'list', 'post': 'create'}), name='invoice-list'),
     path('invoices/from-agreement/', InvoiceViewSet.as_view({'post': 'from_agreement'}), name='invoice-from-agreement'),
     path('invoices/from-agreements/', InvoiceViewSet.as_view({'post': 'from_agreements'}), name='invoice-from-agreements'),
+    path('invoices/from-transfer/', InvoiceViewSet.as_view({'post': 'from_transfer'}), name='invoice-from-transfer'),
     path('invoices/custom/', InvoiceViewSet.as_view({'post': 'custom_invoice'}), name='invoice-custom'),
     path('invoices/<int:pk>/update-custom/', InvoiceViewSet.as_view({'patch': 'update_custom'}), name='invoice-update-custom'),
     path('invoices/<int:pk>/', InvoiceViewSet.as_view({

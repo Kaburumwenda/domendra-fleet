@@ -8,6 +8,7 @@ from .views import (
     ExchangeRateViewSet,
     PaymentViewSet,
     RevenueAnalyticsView,
+    StrayUserView,
     SubscriptionViewSet,
     SystemHealthView,
     TenantTogglesView,
@@ -46,6 +47,8 @@ urlpatterns = [
         'get': 'domains', 'post': 'domains'}), name='tenant-domains'),
     path('tenants/<int:pk>/login-as/', TenantViewSet.as_view({
         'post': 'login_as'}), name='tenant-login-as'),
+    path('tenants/<int:pk>/reset/', TenantViewSet.as_view({
+        'post': 'reset'}), name='tenant-reset'),
     path('tenants/<str:schema_name>/toggles/', TenantTogglesView.as_view(), name='tenant-toggles'),
     path('tenants/<str:schema_name>/users/', TenantUserViewSet.as_view({
         'get': 'list', 'post': 'create'}), name='tenant-users'),
@@ -85,4 +88,8 @@ urlpatterns = [
     path('exchange-rates/<str:currency>/', ExchangeRateViewSet.as_view({
         'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy',
     }), name='exchange-rate-detail'),
+
+    # Stray users (public-schema cleanup)
+    path('stray-users/', StrayUserView.as_view(), name='stray-users'),
+    path('stray-users/<str:email>/', StrayUserView.as_view(), name='stray-user-detail'),
 ]

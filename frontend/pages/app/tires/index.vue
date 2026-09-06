@@ -15,31 +15,31 @@
     <!-- KPI Row -->
     <v-row dense>
       <v-col cols="6" md="3">
-        <v-card elevation="0" border class="pa-5 h-100" style="background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%)">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">mdi-tire</v-icon><span class="text-caption text-white">Total Tires</span></div>
-          <p class="text-h4 font-weight-bold text-white">{{ stats.total }}</p>
-          <p class="text-caption text-white" style="opacity: .85">{{ stats.brands }} brands · {{ stats.sizes }} sizes</p>
+        <v-card elevation="0" border class="pa-5 h-100" style="background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%); color: #fff">
+          <div class="d-flex align-center ga-2 mb-2"><v-icon size="small" style="color: #fff">mdi-tire</v-icon><span class="text-caption">Total Tires</span></div>
+          <p class="text-h4 font-weight-bold">{{ stats.total }}</p>
+          <p class="text-caption" style="opacity: .85">{{ stats.brands }} brands · {{ stats.sizes }} sizes</p>
         </v-card>
       </v-col>
       <v-col cols="6" md="3">
-        <v-card elevation="0" border class="pa-5 h-100" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%)">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">mdi-car-connected</v-icon><span class="text-caption text-white">Mounted</span></div>
-          <p class="text-h4 font-weight-bold text-white">{{ stats.mounted }}</p>
-          <p class="text-caption text-white" style="opacity: .85">{{ stats.inStock }} in stock · {{ stats.spare }} spare</p>
+        <v-card elevation="0" border class="pa-5 h-100" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: #fff">
+          <div class="d-flex align-center ga-2 mb-2"><v-icon size="small" style="color: #fff">mdi-car-connected</v-icon><span class="text-caption">Mounted</span></div>
+          <p class="text-h4 font-weight-bold">{{ stats.mounted }}</p>
+          <p class="text-caption" style="opacity: .85">{{ stats.inStock }} in stock · {{ stats.spare }} spare</p>
         </v-card>
       </v-col>
       <v-col cols="6" md="3">
-        <v-card elevation="0" border class="pa-5 h-100" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">mdi-alert-circle-outline</v-icon><span class="text-caption text-white">Needs Replacement</span></div>
-          <p class="text-h4 font-weight-bold text-white">{{ stats.needsReplacement }}</p>
-          <p class="text-caption text-white" style="opacity: .85">Tread at or below threshold</p>
+        <v-card elevation="0" border class="pa-5 h-100" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: #fff">
+          <div class="d-flex align-center ga-2 mb-2"><v-icon size="small" style="color: #fff">mdi-alert-circle-outline</v-icon><span class="text-caption">Needs Replacement</span></div>
+          <p class="text-h4 font-weight-bold">{{ stats.needsReplacement }}</p>
+          <p class="text-caption" style="opacity: .85">Tread at or below threshold</p>
         </v-card>
       </v-col>
       <v-col cols="6" md="3">
-        <v-card elevation="0" border class="pa-5 h-100" style="background: linear-gradient(135deg, #ef4444 0%, #f87171 100%)">
-          <div class="d-flex align-center ga-2 mb-2"><v-icon color="white" size="small">mdi-archive-outline</v-icon><span class="text-caption text-white">Retired / Scrapped</span></div>
-          <p class="text-h4 font-weight-bold text-white">{{ stats.retired }}</p>
-          <p class="text-caption text-white" style="opacity: .85">{{ currencySymbol }}{{ stats.inventoryValue.toFixed(0) }} inventory value</p>
+        <v-card elevation="0" border class="pa-5 h-100" style="background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); color: #fff">
+          <div class="d-flex align-center ga-2 mb-2"><v-icon size="small" style="color: #fff">mdi-archive-outline</v-icon><span class="text-caption">Retired / Scrapped</span></div>
+          <p class="text-h4 font-weight-bold">{{ stats.retired }}</p>
+          <p class="text-caption" style="opacity: .85">{{ currencySymbol }}{{ stats.inventoryValue.toFixed(0) }} inventory value</p>
         </v-card>
       </v-col>
     </v-row>

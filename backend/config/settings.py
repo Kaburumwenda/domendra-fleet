@@ -97,6 +97,7 @@ TENANT_APPS = [
     'apps.notifications',
     'apps.dqf',
     'apps.rentals',
+    'apps.transfers',
     'apps.expenses',
     'apps.financing',
 ]
@@ -226,8 +227,12 @@ CORS_ALLOW_HEADERS = [
     'accept', 'authorization', 'content-type', 'origin',
     'user-agent', 'x-csrftoken', 'x-requested-with', 'x-tenant-schema',
 ]
+CORS_ALLOW_METHODS = [
+    'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS',
+]
 CORS_EXPOSE_HEADERS = [
     'content-disposition', 'content-length', 'content-type',
+    'x-tenant-schema',
 ]
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:3000', cast=Csv())
 
@@ -311,13 +316,19 @@ AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
 AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='eu-central-1')
 AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', default=False, cast=bool)
-_default_acl = config('AWS_DEFAULT_ACL', default='')
+_default_acl = config('AWS_DEFAULT_ACL', default='public-read')
 AWS_DEFAULT_ACL = _default_acl if _default_acl and _default_acl.lower() != 'none' else None
 AWS_S3_VERIFY = config('AWS_S3_VERIFY', default=True, cast=bool)
 AWS_QUERYSTRING_AUTH = config('AWS_QUERYSTRING_AUTH', default=False, cast=bool)
 AWS_S3_SIGNATURE_NAME = config('AWS_S3_SIGNATURE_NAME', default='s3v4')
 
 USE_S3_MEDIA = bool(AWS_ACCESS_KEY_ID and AWS_STORAGE_BUCKET_NAME)
+
+# If boto3 isn't installed, fall back to local filesystem storage
+try:
+    import boto3  # noqa: F401
+except ImportError:
+    USE_S3_MEDIA = False
 
 if USE_S3_MEDIA:
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'

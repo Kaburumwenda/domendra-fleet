@@ -1,10 +1,11 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import django_filters
-from django.db.models import Avg, Count, Sum
+from django.db import connection
+from django.db.models import Avg, Count, Max, Min, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -110,14 +111,24 @@ class FuelTransactionViewSet(viewsets.ModelViewSet):
         transaction_count = txs.count()
 
         by_vehicle = list(
-            txs.values('vehicle__vin', 'vehicle__make', 'vehicle__model', 'vehicle__license_plate', 'vehicle__image')
+            txs.values('vehicle_id', 'vehicle__vin', 'vehicle__make', 'vehicle__model', 'vehicle__license_plate', 'vehicle__image')
             .annotate(
                 total_cost=Sum('total_cost'),
                 total_gallons=Sum('quantity'),
                 fill_count=Count('id'),
+                min_odometer=Min('odometer_reading'),
+                max_odometer=Max('odometer_reading'),
             )
             .order_by('-total_cost')
         )
+        for row in by_vehicle:
+            min_o = row.pop('min_odometer', None)
+            max_o = row.pop('max_odometer', None)
+            distance = (max_o - min_o) if (min_o is not None and max_o is not None) else None
+            row['distance'] = distance
+            row['min_odometer'] = min_o
+            row['max_odometer'] = max_o
+            row['avg_mpg'] = round(distance / row['total_gallons'], 1) if (distance and row['total_gallons']) else None
 
         monthly = list(
             txs.annotate(month=TruncMonth('date'))
@@ -218,18 +229,217 @@ class FuelTransactionViewSet(viewsets.ModelViewSet):
             'by_vehicle_type': by_vehicle_type,
         })
 
+    @action(detail=False, methods=['get'])
+    def vehicle_fuel_pdf(self, request):
+        """Generate a PDF report for a specific vehicle's fuel transactions."""
+        from .pdf_export import generate_vehicle_fuel_pdf
+        from apps.vehicles.models import Vehicle
+        from django.shortcuts import get_object_or_404
+
+        vehicle_id = request.query_params.get('vehicle_id')
+        if not vehicle_id:
+            return Response(
+                {'error': 'vehicle_id parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        vehicle = get_object_or_404(Vehicle, pk=vehicle_id)
+        qs = self.get_queryset().filter(vehicle_id=vehicle_id).order_by('date')
+
+        # Optional date filtering
+        date_gte = request.query_params.get('date__gte')
+        date_lte = request.query_params.get('date__lte')
+        if date_gte:
+            qs = qs.filter(date__gte=date_gte)
+        if date_lte:
+            qs = qs.filter(date__lte=date_lte)
+
+        # Currency symbol
+        currency = '$'
+        tenant_obj = None
+        try:
+            from apps.tenants.models import Tenant
+            tenant_obj = Tenant.objects.get(schema_name=connection.schema_name)
+            currency_map = {
+                'USD': '$', 'EUR': '€', 'GBP': '£', 'KES': 'KSh',
+                'NGN': '₦', 'ZAR': 'R', 'AED': 'AED', 'SAR': 'SAR',
+                'INR': '₹', 'CAD': 'C$', 'AUD': 'A$', 'GHS': '₵',
+            }
+            currency = currency_map.get(getattr(tenant_obj, 'currency', 'USD'), '$')
+        except Exception:
+            pass
+
+        # Compute period string from explicit filters or transaction date range
+        txs_list = list(qs)
+        if date_gte or date_lte:
+            from_label = datetime.strptime(date_gte[:10], '%Y-%m-%d').strftime('%b %d, %Y') if date_gte else 'All'
+            to_label = datetime.strptime(date_lte[:10], '%Y-%m-%d').strftime('%b %d, %Y') if date_lte else 'Present'
+            period_str = f'Period: {from_label} — {to_label}'
+        elif txs_list:
+            dates = sorted([t.date for t in txs_list])
+            from_label = dates[0].strftime('%b %d, %Y')
+            to_label = dates[-1].strftime('%b %d, %Y')
+            period_str = f'Period: {from_label} — {to_label}'
+        else:
+            period_str = 'Period: No transactions'
+
+        return generate_vehicle_fuel_pdf(vehicle, txs_list, currency, tenant=tenant_obj, period_str=period_str)
+
+    @action(detail=False, methods=['get'])
+    def fleet_fuel_pdf(self, request):
+        """Generate a PDF report for all vehicles' fuel analytics."""
+        from .pdf_export import generate_fleet_fuel_pdf
+        from django.db.models import F, Max, Min, Q
+
+        # ── Build the same query as analytics ──
+        date_gte = request.query_params.get('date__gte')
+        date_lte = request.query_params.get('date__lte')
+        qs = self.get_queryset()
+        if date_gte:
+            qs = qs.filter(date__gte=date_gte)
+        if date_lte:
+            qs = qs.filter(date__lte=date_lte)
+        if not date_gte and not date_lte:
+            days = int(request.query_params.get('days', 30))
+            since = timezone.now() - timedelta(days=days)
+            qs = qs.filter(date__gte=since)
+        fuel_type = request.query_params.get('fuel_type')
+        if fuel_type:
+            qs = qs.filter(fuel_type=fuel_type)
+        group = request.query_params.get('vehicle_group')
+        if group:
+            qs = qs.filter(vehicle__group_id=group)
+        location = request.query_params.get('vehicle_location')
+        if location:
+            qs = qs.filter(vehicle__location=location)
+
+        txs = qs
+
+        # ── Aggregate data (mirrors analytics action) ──
+        total_cost = txs.aggregate(t=Sum('total_cost'))['t'] or 0
+        total_gallons = txs.aggregate(t=Sum('quantity'))['t'] or 0
+        avg_price = txs.aggregate(a=Avg('total_cost'))['a'] or 0
+        transaction_count = txs.count()
+
+        by_vehicle = list(
+            txs.values('vehicle_id', 'vehicle__vin', 'vehicle__make', 'vehicle__model',
+                       'vehicle__license_plate', 'vehicle__image')
+            .annotate(
+                total_cost=Sum('total_cost'),
+                total_gallons=Sum('quantity'),
+                fill_count=Count('id'),
+                min_odometer=Min('odometer_reading'),
+                max_odometer=Max('odometer_reading'),
+            )
+            .order_by('-total_cost')
+        )
+        for row in by_vehicle:
+            min_o = row.pop('min_odometer', None)
+            max_o = row.pop('max_odometer', None)
+            distance = (max_o - min_o) if (min_o is not None and max_o is not None) else None
+            row['distance'] = distance
+            row['min_odometer'] = min_o
+            row['max_odometer'] = max_o
+            row['avg_mpg'] = round(distance / row['total_gallons'], 1) if (distance and row['total_gallons']) else None
+
+        monthly = list(
+            txs.annotate(month=TruncMonth('date'))
+            .values('month')
+            .annotate(total_cost=Sum('total_cost'), total_gallons=Sum('quantity'))
+            .order_by('month')
+        )
+        for row in monthly:
+            m = row.get('month')
+            row['month'] = m.strftime('%Y-%m') if m else ''
+
+        daily = list(
+            txs.extra(select={'day': 'DATE(date)'})
+            .values('day')
+            .annotate(total_cost=Sum('total_cost'), total_gallons=Sum('quantity'), count=Count('id'))
+            .order_by('day')
+        )
+
+        by_station = list(
+            txs.exclude(station_name='')
+            .values('station_name', 'station_location')
+            .annotate(total_cost=Sum('total_cost'), total_gallons=Sum('quantity'), count=Count('id'))
+            .order_by('-total_cost')[:10]
+        )
+
+        cost_agg = txs.aggregate(max_cost=Max('total_cost'), min_cost=Min('total_cost'))
+
+        analytics_data = {
+            'total_cost': float(total_cost),
+            'total_gallons': float(total_gallons),
+            'transaction_count': transaction_count,
+            'avg_price_per_transaction': float(avg_price),
+            'avg_price_per_gallon': round(float(total_cost) / total_gallons, 3) if total_gallons else 0,
+            'max_transaction_cost': float(cost_agg['max_cost'] or 0),
+            'min_transaction_cost': float(cost_agg['min_cost'] or 0),
+            'by_vehicle': by_vehicle,
+            'monthly_trend': monthly,
+            'daily_trend': daily,
+            'by_station': by_station,
+        }
+
+        # ── Currency & tenant ──
+        currency = '$'
+        tenant_obj = None
+        try:
+            from apps.tenants.models import Tenant
+            tenant_obj = Tenant.objects.get(schema_name=connection.schema_name)
+            currency_map = {
+                'USD': '$', 'EUR': '€', 'GBP': '£', 'KES': 'KSh',
+                'NGN': '₦', 'ZAR': 'R', 'AED': 'AED', 'SAR': 'SAR',
+                'INR': '₹', 'CAD': 'C$', 'AUD': 'A$', 'GHS': '₵',
+            }
+            currency = currency_map.get(getattr(tenant_obj, 'currency', 'USD'), '$')
+        except Exception:
+            pass
+
+        # ── Period string ──
+        if date_gte or date_lte:
+            from_label = datetime.strptime(date_gte[:10], '%Y-%m-%d').strftime('%b %d, %Y') if date_gte else 'All'
+            to_label = datetime.strptime(date_lte[:10], '%Y-%m-%d').strftime('%b %d, %Y') if date_lte else 'Present'
+            period_str = f'Period: {from_label} — {to_label}'
+        elif daily:
+            from_label = str(daily[0].get('day', ''))
+            to_label = str(daily[-1].get('day', ''))
+            period_str = f'Period: {from_label} — {to_label}'
+        else:
+            period_str = 'Period: No data'
+
+        return generate_fleet_fuel_pdf(analytics_data, currency, tenant=tenant_obj, period_str=period_str)
+
+
+class ChargingSessionFilter(django_filters.FilterSet):
+    date__gte = django_filters.IsoDateTimeFilter(field_name='start_time', lookup_expr='gte')
+    date__lte = django_filters.IsoDateTimeFilter(field_name='start_time', lookup_expr='lte')
+
+    class Meta:
+        model = ChargingSession
+        fields = ['vehicle', 'station_network', 'date__gte', 'date__lte']
+
 
 class ChargingSessionViewSet(viewsets.ModelViewSet):
     queryset = ChargingSession.objects.select_related('vehicle')
     serializer_class = ChargingSessionSerializer
-    filterset_fields = ['vehicle', 'station_network']
+    filterset_class = ChargingSessionFilter
     ordering_fields = ['start_time', 'energy_kwh', 'cost']
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        days = int(request.query_params.get('days', 30))
-        since = timezone.now() - timedelta(days=days)
-        sessions = self.get_queryset().filter(start_time__gte=since)
+        date_gte = request.query_params.get('date__gte')
+        date_lte = request.query_params.get('date__lte')
+        sessions = self.get_queryset()
+        if date_gte:
+            sessions = sessions.filter(start_time__gte=date_gte)
+        if date_lte:
+            sessions = sessions.filter(start_time__lte=date_lte)
+        if not date_gte and not date_lte:
+            days = int(request.query_params.get('days', 30))
+            since = timezone.now() - timedelta(days=days)
+            sessions = sessions.filter(start_time__gte=since)
         data = sessions.aggregate(
             total_kwh=Sum('energy_kwh'),
             total_cost=Sum('cost'),
@@ -371,17 +581,34 @@ class FuelBudgetViewSet(viewsets.ModelViewSet):
         return Response({'rows': rows, 'actual_fleet': actual_fleet})
 
 
+class IdlingEventFilter(django_filters.FilterSet):
+    date__gte = django_filters.IsoDateTimeFilter(field_name='start_time', lookup_expr='gte')
+    date__lte = django_filters.IsoDateTimeFilter(field_name='start_time', lookup_expr='lte')
+
+    class Meta:
+        model = IdlingEvent
+        fields = ['vehicle', 'date__gte', 'date__lte']
+
+
 class IdlingEventViewSet(viewsets.ModelViewSet):
     queryset = IdlingEvent.objects.select_related('vehicle')
     serializer_class = IdlingEventSerializer
-    filterset_fields = ['vehicle']
+    filterset_class = IdlingEventFilter
     ordering_fields = ['start_time']
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        days = int(request.query_params.get('days', 30))
-        since = timezone.now() - timedelta(days=days)
-        events = self.get_queryset().filter(start_time__gte=since)
+        date_gte = request.query_params.get('date__gte')
+        date_lte = request.query_params.get('date__lte')
+        events = self.get_queryset()
+        if date_gte:
+            events = events.filter(start_time__gte=date_gte)
+        if date_lte:
+            events = events.filter(start_time__lte=date_lte)
+        if not date_gte and not date_lte:
+            days = int(request.query_params.get('days', 30))
+            since = timezone.now() - timedelta(days=days)
+            events = events.filter(start_time__gte=since)
         total_cost = sum(e.cost or 0 for e in events)
         total_fuel = sum(e.fuel_burned or 0 for e in events)
         total_hours = sum(e.duration_hours or 0 for e in events)

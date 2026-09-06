@@ -50,6 +50,17 @@ PERMISSIONS_REGISTRY = [
         ],
     ),
     (
+        'transfers', 'Transfers', 'mdi-car-multiple',
+        [
+            ('view', 'View Transfers', 'View transfer bookings and live tracking'),
+            ('create', 'Create Transfers', 'Create new transfer bookings'),
+            ('update', 'Edit Transfers', 'Modify transfer bookings and assignments'),
+            ('delete', 'Delete Transfers', 'Cancel or remove transfer bookings'),
+            ('assign', 'Assign Resources', 'Assign vehicles and drivers to transfers'),
+            ('export', 'Export Transfers', 'Export transfer booking data'),
+        ],
+    ),
+    (
         'maintenance', 'Maintenance', 'mdi-wrench-outline',
         [
             ('view', 'View Maintenance', 'View work orders, issues, and services'),
@@ -332,6 +343,7 @@ SYSTEM_ROLES = [
         'is_default': False,
         'permissions': [
             ('dispatch', 'view'), ('dispatch', 'create'), ('dispatch', 'update'), ('dispatch', 'assign'),
+            ('transfers', 'view'), ('transfers', 'create'), ('transfers', 'update'), ('transfers', 'assign'),
             ('vehicles', 'view'), ('drivers', 'view'),
             ('telematics', 'view'),
             ('dispatch', 'delete'),
@@ -372,6 +384,7 @@ SYSTEM_ROLES = [
         'permissions': [
             ('vehicles', 'view'),
             ('dispatch', 'view'),
+            ('transfers', 'view'),
             ('fuel', 'view'), ('fuel', 'create'),
             ('inspections', 'view'), ('inspections', 'create'),
             ('documents', 'view'),

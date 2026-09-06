@@ -1,11 +1,13 @@
 <template>
   <section class="fc-cmp">
     <div class="fc-cmp__inner">
-      <SectionEyebrow text="Why switch" icon="mdi-scale-balance" />
-      <h2>See the Domendra difference</h2>
-      <p class="fc-cmp__sub">Stop juggling spreadsheets, bloated legacy systems, and disconnected tools. Domendra brings it all together — beautifully.</p>
+      <div class="reveal" data-reveal-type="fade">
+        <SectionEyebrow text="Why switch" icon="mdi-scale-balance" />
+        <h2>See the Domendra difference</h2>
+        <p class="fc-cmp__sub">Stop juggling spreadsheets, bloated legacy systems, and disconnected tools. Domendra brings it all together — beautifully.</p>
+      </div>
 
-      <div class="fc-cmp__table-wrap">
+      <div class="fc-cmp__table-wrap reveal" data-reveal-type="scale" data-reveal-delay="100">
         <table class="fc-cmp__table">
           <thead>
             <tr>
@@ -43,6 +45,9 @@
 </template>
 
 <script setup lang="ts">
+const { register } = useScrollReveal()
+onMounted(() => register('.reveal'))
+
 const rows = [
   { label: 'Real-time dashboards', sheets: false, legacy: true },
   { label: 'Automated PM schedules', sheets: false, sheetsText: 'Manual', legacy: true },

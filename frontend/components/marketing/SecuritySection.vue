@@ -4,14 +4,19 @@
       <div class="fc-sec__blob" />
     </div>
     <div class="fc-sec__inner">
-      <div class="fc-sec__head">
+      <div class="fc-sec__head reveal" data-reveal-type="fade">
         <SectionEyebrow text="Security & compliance" icon="mdi-shield-check" />
         <h2>Your data is safe with us</h2>
         <p>Enterprise-grade security baked into every layer — from schema-based isolation to full audit trails.</p>
       </div>
 
       <div class="fc-sec__grid">
-        <div v-for="item in items" :key="item.title" class="fc-sec__card">
+        <div
+          v-for="(item, i) in items"
+          :key="item.title"
+          class="fc-sec__card reveal"
+          :data-reveal-delay="i * 80"
+        >
           <span class="fc-sec__icon" :style="{ background: item.bg, color: item.color }">
             <v-icon size="22">{{ item.icon }}</v-icon>
           </span>
@@ -31,6 +36,9 @@
 </template>
 
 <script setup lang="ts">
+const { register } = useScrollReveal()
+onMounted(() => register('.reveal'))
+
 const items = [
   { title: 'Multi-tenant isolation', desc: 'Every tenant gets a dedicated PostgreSQL schema — your data is never shared.', icon: 'mdi-database-lock', bg: '#eef2ff', color: '#4f46e5' },
   { title: 'JWT authentication', desc: 'Stateless tokens with refresh rotation and device tracking for secure access.', icon: 'mdi-key-chain', bg: '#ecfeff', color: '#0891b2' },

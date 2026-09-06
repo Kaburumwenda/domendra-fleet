@@ -78,17 +78,19 @@ class RoleDetailSerializer(RoleSerializer):
         for module, label, icon, actions in PERMISSIONS_REGISTRY:
             perms = []
             for action, action_label, desc in actions:
-                p = Permission.objects.filter(module=module, action=action).first()
-                if p:
-                    perms.append({
-                        'id': p.id,
-                        'module': module,
-                        'action': action,
-                        'label': action_label,
-                        'description': desc,
-                        'code': p.code,
-                        'granted': p.id in perm_ids,
-                    })
+                p, _ = Permission.objects.get_or_create(
+                    module=module, action=action,
+                    defaults={'label': action_label, 'description': desc},
+                )
+                perms.append({
+                    'id': p.id,
+                    'module': module,
+                    'action': action,
+                    'label': action_label,
+                    'description': desc,
+                    'code': p.code,
+                    'granted': p.id in perm_ids,
+                })
             groups.append({
                 'module': module,
                 'label': label,

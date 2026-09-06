@@ -411,6 +411,11 @@ class Invoice(models.Model):
         null=True, blank=True,
         help_text='Primary agreement for single-agreement invoices; null for multi-agreement consolidated invoices.',
     )
+    transfer = models.ForeignKey(
+        'transfers.Transfer', on_delete=models.CASCADE, related_name='invoices',
+        null=True, blank=True,
+        help_text='Linked transfer booking for transfer-generated invoices.',
+    )
     agreements = models.JSONField(
         default=list, blank=True,
         help_text='List of {id, agreement_no} for multi-agreement consolidated invoices.',

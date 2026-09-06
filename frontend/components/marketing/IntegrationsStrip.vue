@@ -1,12 +1,18 @@
 <template>
   <section class="fc-int">
     <div class="fc-int__inner">
-      <SectionEyebrow text="Works with your stack" icon="mdi-link-variant" />
-      <h2>Connect everything. Sync automatically.</h2>
-      <p class="fc-int__sub">Domendra integrates with the tools your fleet already uses — from telematics providers to accounting software — so your data flows seamlessly without manual entry.</p>
+      <SectionEyebrow text="Works with your stack" icon="mdi-link-variant" class="reveal" data-reveal-type="fade" />
+      <h2 class="reveal" data-reveal-type="fade" data-reveal-delay="60">Connect everything. Sync automatically.</h2>
+      <p class="fc-int__sub reveal" data-reveal-type="fade" data-reveal-delay="120">Domendra integrates with the tools your fleet already uses — from telematics providers to accounting software — so your data flows seamlessly without manual entry.</p>
 
       <div class="fc-int__grid">
-        <div v-for="int in integrations" :key="int.name" class="fc-int__item">
+        <div
+          v-for="(int, i) in integrations"
+          :key="int.name"
+          class="fc-int__item reveal"
+          :data-reveal-delay="i * 60"
+          :data-reveal-type="i % 2 ? 'right' : 'left'"
+        >
           <div class="fc-int__icon" :style="{ background: int.bg, color: int.color }">
             <v-icon size="24">{{ int.icon }}</v-icon>
           </div>
@@ -27,6 +33,9 @@
 </template>
 
 <script setup lang="ts">
+const { register } = useScrollReveal()
+onMounted(() => register('.reveal'))
+
 const integrations = [
   { name: 'Geotab', category: 'Telematics', icon: 'mdi-map-marker', bg: '#eef2ff', color: '#4f46e5' },
   { name: 'Samsara', category: 'Telematics', icon: 'mdi-truck', bg: '#f0fdf4', color: '#16a34a' },

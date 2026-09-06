@@ -1,12 +1,19 @@
 <template>
   <section class="fc-ind">
-    <div class="fc-section__head">
+    <div class="fc-section__head reveal" data-reveal-type="fade">
       <SectionEyebrow text="Any industry, any size" icon="mdi-domain" />
       <h2>Built for fleets of every kind</h2>
       <p>From a handful of trucks to thousands of assets across multiple locations — Domendra scales with you.</p>
     </div>
     <div class="fc-ind__grid">
-      <NuxtLink v-for="ind in industries" :key="ind.title" :to="ind.path" class="fc-ind__card">
+      <NuxtLink
+        v-for="(ind, i) in industries"
+        :key="ind.title"
+        :to="ind.path"
+        class="fc-ind__card reveal"
+        :data-reveal-delay="i * 80"
+        data-reveal-type="scale"
+      >
         <span class="fc-ind__icon" :style="{ background: ind.bg, color: ind.color }"><v-icon size="26">{{ ind.icon }}</v-icon></span>
         <h3>{{ ind.title }}</h3>
         <p>{{ ind.desc }}</p>
@@ -17,6 +24,9 @@
 </template>
 
 <script setup lang="ts">
+const { register } = useScrollReveal()
+onMounted(() => register('.reveal'))
+
 const industries = [
   { title: 'Service Providers', desc: 'Maximize fleet uptime and guarantee reliability.', icon: 'mdi-account-tie', bg: '#eef2ff', color: '#4f46e5', path: '/industries/service-providers' },
   { title: 'Construction', desc: 'Stay on time and on budget for every job.', icon: 'mdi-hard-hat', bg: '#fff7ed', color: '#ea580c', path: '/industries/construction' },

@@ -36,6 +36,16 @@ class PermissionGroupListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # Auto-create any missing Permission rows so the matrix always
+        # shows the full catalog even before the seed migration runs.
+        for module, label, icon, actions in PERMISSIONS_REGISTRY:
+            for action, action_label, desc in actions:
+                Permission.objects.get_or_create(
+                    module=module,
+                    action=action,
+                    defaults={'label': action_label, 'description': desc},
+                )
+
         groups = []
         for module, label, icon, actions in PERMISSIONS_REGISTRY:
             perms_qs = Permission.objects.filter(module=module)
@@ -83,6 +93,10 @@ class RoleListView(generics.ListCreateAPIView):
         role.save(update_fields=['user_count'])
 
     def list(self, request, *args, **kwargs):
+        # Auto-seed system roles if missing (e.g. fresh tenant before
+        # the seed migration has run).
+        self._ensure_system_roles()
+
         # Enrich with permission count for the roles table progress bars.
         queryset = self.filter_queryset(self.get_queryset())
         data = []
@@ -92,6 +106,26 @@ class RoleListView(generics.ListCreateAPIView):
             item['permission_count'] = role.permissions.count()
             data.append(item)
         return Response(data)
+
+    @staticmethod
+    def _ensure_system_roles():
+        """Create any missing system roles from the registry.
+
+        Permissions are auto-created lazily by ``PermissionGroupListView``
+        or the seed migration; here we just ensure the Role rows exist.
+        """
+        from apps.rbac.permissions_registry import SYSTEM_ROLES
+        for role_data in SYSTEM_ROLES:
+            if not Role.objects.filter(key=role_data['key']).exists():
+                Role.objects.create(
+                    key=role_data['key'],
+                    name=role_data['name'],
+                    description=role_data['description'],
+                    color=role_data['color'],
+                    icon=role_data['icon'],
+                    is_system=role_data['is_system'],
+                    is_default=role_data['is_default'],
+                )
 
 
 class RoleDetailView(generics.RetrieveUpdateDestroyAPIView):

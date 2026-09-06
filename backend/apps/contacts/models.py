@@ -49,6 +49,8 @@ class DriverProfile(models.Model):
         A = 'A', 'Class A'
         B = 'B', 'Class B'
         C = 'C', 'Class C'
+        AB = 'AB', 'Class AB'
+        B_AUTO = 'B Auto', 'Class B Auto'
         CDL_A = 'CDL-A', 'CDL-A'
         CDL_B = 'CDL-B', 'CDL-B'
         M = 'M', 'Class M'

@@ -29,6 +29,7 @@ urlpatterns = [
     path('financial/profit-loss/', StandardReportsView.as_view({'get': 'profit_loss'}), name='rpt-profit-loss'),
     path('financial/locations/', StandardReportsView.as_view({'get': 'locations_analysis'}), name='rpt-locations'),
     path('financial/ownership/', StandardReportsView.as_view({'get': 'cost_of_ownership'}), name='rpt-ownership'),
+    path('financial/pdf/', StandardReportsView.as_view({'get': 'financial_pdf'}), name='rpt-financial-pdf'),
     path('general-ledger/', StandardReportsView.as_view({'get': 'general_ledger'}), name='rpt-general-ledger'),
     path('seed-demo/', StandardReportsView.as_view({'get': 'seed_demo'}), name='rpt-seed-demo'),
     path('export/', StandardReportsView.as_view({'get': 'export'}), name='rpt-export'),

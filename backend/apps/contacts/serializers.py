@@ -101,6 +101,25 @@ class ContactSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
 
+    def to_internal_value(self, data):
+        # When the request is multipart/form-data (e.g. photo upload), nested
+        # objects and JSON fields arrive as JSON-encoded strings.  Parse them
+        # back into native types before DRF validation runs.
+        import json
+        # Work on a mutable copy so we never touch the original request data.
+        try:
+            data = data.copy() if hasattr(data, 'copy') else dict(data)
+        except Exception:
+            data = dict(data)
+        for key in ('driver_profile', 'vendor_profile'):
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                try:
+                    data[key] = json.loads(val)
+                except (json.JSONDecodeError, ValueError):
+                    pass  # let DRF report the validation error
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
         driver_data = validated_data.pop('driver_profile', None)
         vendor_data = validated_data.pop('vendor_profile', None)

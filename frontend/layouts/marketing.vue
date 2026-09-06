@@ -16,4 +16,5 @@ useHead({
 
 <style scoped>
 :deep(.v-main) { background: #fff !important; }
+:deep(html) { scroll-behavior: smooth; }
 </style>

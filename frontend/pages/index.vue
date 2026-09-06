@@ -3,6 +3,7 @@
     <HeroSection />
     <TrustLogos />
     <FeatureGrid />
+    <LiveMetrics />
     <StatStrip />
     <PodSections />
     <Testimonial />

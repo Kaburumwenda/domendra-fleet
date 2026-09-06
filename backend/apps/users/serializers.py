@@ -9,22 +9,29 @@ from .models import User
 def _resolve_schema_for_email(email):
     """Return the (schema_name, Tenant) that owns *email*, or (None, None).
 
-    Searches the public schema first (global super-admin lives there), then
-    every registered tenant schema.
+    Searches every registered tenant schema first.  Only if no match is
+    found in any tenant does it fall back to the public schema, where the
+    global super-admin lives.  This prevents a stray tenant user created
+    accidentally in the public schema from shadowing the real tenant user.
     """
     from apps.tenants.models import Tenant
     from django_tenants.utils import schema_context
 
-    # 1 — public schema (super-admin)
-    with schema_context('public'):
-        if User.objects.filter(email__iexact=email).exists():
-            return 'public', None
-
-    # 2 — tenant schemas
+    # 1 — tenant schemas (preferred)
     for tenant in Tenant.objects.all().iterator():
         with schema_context(tenant.schema_name):
             if User.objects.filter(email__iexact=email).exists():
                 return tenant.schema_name, tenant
+
+    # 2 — public schema (super-admin only)
+    with schema_context('public'):
+        pub_user = User.objects.filter(email__iexact=email).first()
+        if pub_user:
+            # Only allow public-schema login for actual super-admins/staff.
+            # A regular tenant user sitting in public is a data error —
+            # refuse it so the operator notices and runs fix_user_schema.
+            if pub_user.is_superuser or pub_user.is_staff:
+                return 'public', None
 
     return None, None
 

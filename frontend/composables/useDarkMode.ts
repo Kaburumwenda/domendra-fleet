@@ -23,8 +23,8 @@ export function useDarkMode() {
     if (initialized || !import.meta.client) return
     initialized = true
     const stored = localStorage.getItem(STORAGE_KEY)
-    // Default to dark mode when no preference is stored
-    apply(stored !== 'light')
+    // Default to light mode when no preference is stored
+    apply(stored === 'dark')
   }
 
   return { isDark, toggle, init }

@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/rbac/', include('apps.rbac.urls')),
     path('api/expenses/', include('apps.expenses.urls')),
     path('api/financing/', include('apps.financing.urls')),
+    path('api/transfers/', include('apps.transfers.urls')),
     path('api/superadmin/', include('apps.superadmin.urls')),
 
     # API docs

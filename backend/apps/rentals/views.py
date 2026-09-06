@@ -541,13 +541,106 @@ class DriverHireRateViewSet(viewsets.ModelViewSet):
 
 
 class InvoiceViewSet(viewsets.ModelViewSet):
-    """Invoice CRUD + generate-from-agreement action."""
+    """Invoice CRUD + generate-from-agreement / from-transfer actions."""
 
-    queryset = Invoice.objects.all().select_related('agreement', 'customer', 'agreement__vehicle')
+    queryset = Invoice.objects.all().select_related('agreement', 'customer', 'agreement__vehicle', 'transfer')
     serializer_class = InvoiceSerializer
-    filterset_fields = ['status', 'customer', 'agreement']
-    search_fields = ['invoice_no', 'customer__full_name', 'agreement__agreement_no']
+    filterset_fields = ['status', 'customer', 'agreement', 'transfer']
+    search_fields = ['invoice_no', 'customer__full_name', 'agreement__agreement_no', 'transfer__reference']
     ordering_fields = ['issue_date', 'due_date', 'total_amount', 'created_at']
+
+    @action(detail=False, methods=['post'], url_path='from-transfer')
+    def from_transfer(self, request):
+        """Generate an invoice from a transfer booking.
+
+        Body: { "transfer": <id>, "due_date": "YYYY-MM-DD" (optional), "notes": "" }
+        """
+        from apps.transfers.models import Transfer
+
+        transfer_id = request.data.get('transfer')
+        if not transfer_id:
+            return Response({'detail': 'transfer is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            transfer = Transfer.objects.get(pk=transfer_id)
+        except Transfer.DoesNotExist:
+            return Response({'detail': 'Transfer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Build line items from transfer fare components
+        line_items = []
+
+        if transfer.base_fare:
+            line_items.append({
+                'description': f'Transfer — {transfer.pickup_name} → {transfer.dropoff_name}',
+                'quantity': 1,
+                'unit_amount': float(transfer.base_fare),
+                'total_amount': float(transfer.base_fare),
+            })
+
+        extras = [
+            ('tolls_amount', 'Tolls'),
+            ('parking_amount', 'Parking'),
+            ('meet_greet_fee', 'Meet & Greet Fee'),
+            ('waiting_fee', 'Waiting Fee'),
+            ('child_seat_fee', 'Child Seat Fee'),
+            ('driver_tip', 'Driver Tip'),
+        ]
+        for field, label in extras:
+            val = getattr(transfer, field, 0) or 0
+            if val and val > 0:
+                line_items.append({
+                    'description': label,
+                    'quantity': 1,
+                    'unit_amount': float(val),
+                    'total_amount': float(val),
+                })
+
+        if transfer.tax_amount:
+            line_items.append({
+                'description': 'Tax',
+                'quantity': 1,
+                'unit_amount': float(transfer.tax_amount),
+                'total_amount': float(transfer.tax_amount),
+            })
+
+        if transfer.discount_amount and transfer.discount_amount > 0:
+            line_items.append({
+                'description': 'Discount',
+                'quantity': 1,
+                'unit_amount': -float(transfer.discount_amount),
+                'total_amount': -float(transfer.discount_amount),
+            })
+
+        subtotal = transfer.base_fare + transfer.tolls_amount + transfer.parking_amount + transfer.meet_greet_fee + transfer.waiting_fee + transfer.child_seat_fee + transfer.driver_tip + transfer.tax_amount
+        invoice = Invoice.objects.create(
+            transfer=transfer,
+            status=Invoice.Status.DRAFT,
+            issue_date=timezone.now().date(),
+            due_date=request.data.get('due_date') or None,
+            subtotal=subtotal,
+            discount_total=transfer.discount_amount,
+            taxes=transfer.tax_amount,
+            total_amount=transfer.total_amount,
+            amount_paid=transfer.amount_paid or 0,
+            notes=request.data.get('notes', f'Invoice for transfer {transfer.reference}'),
+            line_items=line_items,
+            invoice_to={
+                'name': transfer.passenger_name,
+                'email': transfer.passenger_email,
+                'phone': transfer.passenger_phone,
+            },
+        )
+
+        # Set payment status based on amount paid
+        if transfer.amount_paid and transfer.amount_paid > 0:
+            if transfer.amount_paid >= transfer.total_amount:
+                invoice.status = Invoice.Status.PAID
+            else:
+                invoice.status = Invoice.Status.PARTIALLY_PAID
+
+        invoice.save()
+
+        return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'], url_path='from-agreement')
     def from_agreement(self, request):

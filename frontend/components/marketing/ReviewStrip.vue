@@ -1,11 +1,17 @@
 <template>
   <section class="fc-rev">
     <div class="fc-rev__inner">
-      <SectionEyebrow text="Top-rated everywhere" icon="mdi-star-outline" />
-      <h2>Top choices on G2, Capterra and beyond</h2>
-      <p class="fc-rev__sub">4.8/5 based on &gt;1,000 reviews</p>
+      <SectionEyebrow text="Top-rated everywhere" icon="mdi-star-outline" class="reveal" data-reveal-type="fade" />
+      <h2 class="reveal" data-reveal-type="fade" data-reveal-delay="60">Top choices on G2, Capterra and beyond</h2>
+      <p class="fc-rev__sub reveal" data-reveal-type="fade" data-reveal-delay="120">4.8/5 based on &gt;1,000 reviews</p>
       <div class="fc-rev__grid">
-        <div v-for="r in reviews" :key="r.name" class="fc-rev__card">
+        <div
+          v-for="(r, i) in reviews"
+          :key="r.name"
+          class="fc-rev__card reveal"
+          :data-reveal-delay="i * 70"
+          data-reveal-type="scale"
+        >
           <p class="fc-rev__score">{{ r.score }}</p>
           <p class="fc-rev__name">{{ r.name }}</p>
         </div>
@@ -15,6 +21,9 @@
 </template>
 
 <script setup lang="ts">
+const { register } = useScrollReveal()
+onMounted(() => register('.reveal'))
+
 const reviews = [
   { name: 'Capterra', score: '4.8/5' },
   { name: 'Forbes Advisor', score: 'Top 10' },
