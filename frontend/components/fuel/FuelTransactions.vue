@@ -64,6 +64,12 @@
         <template #item.index="{ index }">
           <span class="text-caption text-medium-emphasis">{{ (page - 1) * perPage + index + 1 }}</span>
         </template>
+        <template #item.vehicle="{ item }">
+          <div class="d-flex flex-column">
+            <span class="text-body-2 font-weight-medium" style="color: #1e293b">{{ (item as any).vehicle_name || '—' }}</span>
+            <span v-if="(item as any).vehicle_license_plate" class="text-caption text-medium-emphasis">{{ (item as any).vehicle_license_plate }}</span>
+          </div>
+        </template>
         <template #item.date="{ value }">
           <div class="d-flex flex-column">
             <span class="text-body-2 font-weight-medium" style="color: #1e293b">{{ formatFuelDate(value).date }}</span>
@@ -107,14 +113,22 @@
     </v-card>
 
     <!-- Add/Edit Dialog -->
-    <v-dialog v-model="dialogVisible" max-width="640" scroll-strategy="none">
+    <v-dialog v-model="dialogVisible" max-width="640" scrollable>
       <v-card rounded="xl" class="overflow-hidden">
         <AppModalHeader icon="mdi-gas-station">{{ editingTx ? 'Edit' : 'Add' }} Fuel Transaction</AppModalHeader>
         <v-card-text class="pt-5">
           <div class="text-caption text-medium-emphasis mb-4">Record a fuel purchase. Fields marked <span class="text-error">*</span> are required.</div>
           <v-row dense>
             <v-col cols="12">
-              <v-select v-model="form.vehicle" :items="vehicleOptions" item-title="display_name" item-value="id" label="Vehicle *" placeholder="Select vehicle" :rules="[v => !!v || 'Vehicle is required']" required />
+              <v-select v-model="form.vehicle" :items="vehicleOptions" item-title="display_name" item-value="id" label="Vehicle *" placeholder="Select vehicle" :rules="[v => !!v || 'Vehicle is required']" required>
+                <template #selection="{ item }">
+                  <span class="font-weight-medium">{{ item.raw.display_name }}</span>
+                  <span v-if="item.raw.license_plate" class="text-caption text-medium-emphasis ml-2">· {{ item.raw.license_plate }}</span>
+                </template>
+                <template #item="{ item, props }">
+                  <v-list-item v-bind="props" :title="item.raw.display_name" :subtitle="item.raw.license_plate || 'No plate'" />
+                </template>
+              </v-select>
             </v-col>
             <v-col cols="12" md="6">
               <v-text-field v-model="form.date" type="datetime-local" label="Date & Time *" prepend-inner-icon="mdi-calendar-clock" hide-details="auto" />
@@ -480,7 +494,7 @@ function cancelCustomDate() {
 
 const headers = [
   { title: '#', key: 'index', width: '50px', sortable: false },
-  { title: 'Vehicle', key: 'vehicle_name', sortable: true },
+  { title: 'Vehicle', key: 'vehicle', sortable: true },
   { title: 'Date', key: 'date', sortable: true, width: '170px' },
   { title: 'Fuel', key: 'fuel_type', sortable: true, width: '90px' },
   { title: 'Qty', key: 'quantity', sortable: true, width: '90px' },

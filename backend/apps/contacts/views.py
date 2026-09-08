@@ -236,6 +236,7 @@ class DriverViewSet(viewsets.ModelViewSet):
                 'driver_profile__trainings',
                 'driver_profile__assignments',
             )
+            .order_by('-created_at')
         )
 
     @action(detail=False, methods=['get'], url_path='stats')

@@ -286,7 +286,11 @@ const { data: driversData, pending, refresh } = useAsyncData('drivers-list', () 
   $api('/contacts/drivers/', { query: { page_size: 1000 } }).catch(() => ({ results: [] })),
   { default: () => ({ results: [] as any[] }) },
 )
-const drivers = computed<any[]>(() => driversData.value?.results || [])
+const drivers = computed<any[]>(() => {
+  const list = driversData.value?.results || []
+  // Most recent first (fallback in case server ordering is lost)
+  return [...list].sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+})
 
 const { data: statsData, refresh: refreshStats } = useAsyncData('drivers-stats', () =>
   $api('/contacts/drivers/stats/').catch(() => ({})),

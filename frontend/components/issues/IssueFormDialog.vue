@@ -8,7 +8,13 @@
             <v-text-field v-model="form.title" label="Title *" variant="outlined" density="compact" hide-details="auto" :error-messages="errors.title" prepend-inner-icon="mdi-format-title" />
           </v-col>
           <v-col cols="12">
-            <v-select v-model="form.vehicle" :items="vehicleOptions" item-title="display_name" item-value="id" label="Vehicle *" variant="outlined" density="compact" hide-details="auto" :error-messages="errors.vehicle" prepend-inner-icon="mdi-truck" />
+            <v-select v-model="form.vehicle" :items="vehicleItems" item-title="label" item-value="id" label="Vehicle *" variant="outlined" density="compact" hide-details="auto" :error-messages="errors.vehicle" prepend-inner-icon="mdi-truck" />
+          </v-col>
+          <v-col cols="12">
+            <div class="d-flex align-center ga-2">
+              <v-select v-model="form.vendor" :items="vendorOptions" item-title="full_name" item-value="id" label="Vendor" variant="outlined" density="compact" hide-details="auto" clearable prepend-inner-icon="mdi-store" class="flex-grow-1" />
+              <v-btn variant="tonal" color="primary" size="small" height="40" prepend-icon="mdi-plus" @click="vendorDialog = true">Add Vendor</v-btn>
+            </div>
           </v-col>
           <v-col cols="6">
             <v-select v-model="form.status" :items="statusOptions" item-title="label" item-value="value" label="Status" variant="outlined" density="compact" hide-details="auto" prepend-inner-icon="mdi-state-machine" />
@@ -65,6 +71,34 @@
         <v-btn color="primary" prepend-icon="mdi-check" :loading="saving" @click="onSave">{{ editing ? 'Update' : 'Create' }}</v-btn>
       </v-card-actions>
     </v-card>
+
+    <!-- Quick add vendor dialog -->
+    <v-dialog v-model="vendorDialog" max-width="480">
+      <v-card rounded="xl">
+        <AppModalHeader icon="mdi-store-plus-outline">Add Vendor</AppModalHeader>
+        <v-card-text>
+          <v-row dense>
+            <v-col cols="12">
+              <v-text-field v-model="vendorForm.company_name" label="Company Name *" variant="outlined" density="compact" hide-details="auto" :error-messages="vendorErrors.company_name" prepend-inner-icon="mdi-domain" />
+            </v-col>
+            <v-col cols="6">
+              <v-text-field v-model="vendorForm.email" label="Email" type="email" variant="outlined" density="compact" hide-details="auto" prepend-inner-icon="mdi-email-outline" />
+            </v-col>
+            <v-col cols="6">
+              <v-text-field v-model="vendorForm.phone" label="Phone" variant="outlined" density="compact" hide-details="auto" prepend-inner-icon="mdi-phone-outline" />
+            </v-col>
+            <v-col cols="12">
+              <v-text-field v-model="vendorForm.service_type" label="Service Type" variant="outlined" density="compact" hide-details="auto" prepend-inner-icon="mdi-wrench-outline" placeholder="e.g. Tire Supplier" />
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions class="px-4 pb-4">
+          <v-spacer />
+          <v-btn variant="text" @click="vendorDialog = false">Cancel</v-btn>
+          <v-btn color="primary" prepend-icon="mdi-check" :loading="vendorSaving" @click="saveVendor">Save Vendor</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-dialog>
 </template>
 
@@ -78,6 +112,53 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [v: boolean]; save: [payload: any] }>()
 
 const { resolveMediaUrl } = useMediaUrl()
+const { $api, $swal } = useNuxtApp()
+
+const vehicleItems = computed(() => (props.vehicleOptions || []).map(v => ({
+  id: v.id,
+  label: v.license_plate ? `${v.display_name} (${v.license_plate})` : v.display_name,
+})))
+
+// ── Vendor state ──
+const vendorOptions = ref<any[]>([])
+const vendorDialog = ref(false)
+const vendorSaving = ref(false)
+const vendorForm = reactive<any>({ company_name: '', email: '', phone: '', service_type: '' })
+const vendorErrors = reactive<any>({})
+
+async function loadVendors() {
+  try {
+    const res = await $api('/contacts/', { query: { contact_type: 'vendor', page_size: 1000 } })
+    vendorOptions.value = res.results || []
+  } catch (e) { console.error(e) }
+}
+
+async function saveVendor() {
+  Object.keys(vendorErrors).forEach(k => delete vendorErrors[k])
+  if (!vendorForm.company_name?.trim()) { vendorErrors.company_name = 'Company name is required'; return }
+  vendorSaving.value = true
+  try {
+    const created = await $api('/contacts/', {
+      method: 'POST',
+      body: {
+        contact_type: 'vendor',
+        company_name: vendorForm.company_name,
+        email: vendorForm.email,
+        phone: vendorForm.phone,
+        is_active: true,
+        vendor_profile: { service_type: vendorForm.service_type, rating: 0, payment_terms: '', tax_id: '' },
+      },
+    })
+    await loadVendors()
+    form.vendor = created.id
+    Object.assign(vendorForm, { company_name: '', email: '', phone: '', service_type: '' })
+    vendorDialog.value = false
+    $swal?.fire?.({ icon: 'success', title: 'Vendor added', toast: true, timer: 1500, position: 'top-end' })
+  } catch (e) {
+    console.error(e)
+    $swal?.fire?.({ icon: 'error', title: 'Failed to add vendor', toast: true, timer: 2000, position: 'top-end' })
+  } finally { vendorSaving.value = false }
+}
 
 const statusOptions = [
   { label: 'Open', value: 'open' }, { label: 'Assigned', value: 'assigned' },
@@ -89,7 +170,7 @@ const priorityOptions = [
   { label: 'High', value: 'high' }, { label: 'Critical', value: 'critical' },
 ]
 
-const form = reactive<any>({ title: '', vehicle: null, status: 'open', priority: 'medium', description: '' })
+const form = reactive<any>({ title: '', vehicle: null, vendor: null, status: 'open', priority: 'medium', description: '' })
 const errors = reactive<any>({})
 
 // ── Photo upload state ──
@@ -133,7 +214,8 @@ async function removeExistingPhoto(i: number, photo: any) {
 }
 
 function onToggle(v: boolean) {
-  if (!v) {
+  if (v) loadVendors()
+  else {
     // Clean up previews when dialog closes
     photoPreviews.value.forEach(p => URL.revokeObjectURL(p))
   }
@@ -142,10 +224,10 @@ function onToggle(v: boolean) {
 
 function reset(issue?: any) {
   if (issue) {
-    Object.assign(form, { title: issue.title || '', vehicle: issue.vehicle || null, status: issue.status || 'open', priority: issue.priority || 'medium', description: issue.description || '', _id: issue.id })
+    Object.assign(form, { title: issue.title || '', vehicle: issue.vehicle || null, vendor: issue.vendor || null, status: issue.status || 'open', priority: issue.priority || 'medium', description: issue.description || '', _id: issue.id })
     existingPhotos.value = (issue.issue_photos || []).map((p: any) => ({ ...p }))
   } else {
-    Object.assign(form, { title: '', vehicle: null, status: 'open', priority: 'medium', description: '', _id: undefined })
+    Object.assign(form, { title: '', vehicle: null, vendor: null, status: 'open', priority: 'medium', description: '', _id: undefined })
     existingPhotos.value = []
   }
   // Clear new photo uploads

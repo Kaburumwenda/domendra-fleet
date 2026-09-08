@@ -12,6 +12,7 @@ class FuelCardSerializer(serializers.ModelSerializer):
 
 class FuelTransactionSerializer(serializers.ModelSerializer):
     vehicle_name = serializers.CharField(source='vehicle.display_name', read_only=True)
+    vehicle_license_plate = serializers.CharField(source='vehicle.license_plate', read_only=True)
     price_per_unit = serializers.FloatField(read_only=True)
     mpg = serializers.FloatField(read_only=True)
     fraud_alert_count = serializers.IntegerField(read_only=True, required=False)

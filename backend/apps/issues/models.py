@@ -18,6 +18,7 @@ class Issue(models.Model):
         CRITICAL = 'critical', 'Critical'
 
     vehicle = models.ForeignKey('vehicles.Vehicle', on_delete=models.CASCADE, related_name='issues')
+    vendor = models.ForeignKey('contacts.Contact', null=True, blank=True, on_delete=models.SET_NULL, related_name='issues')
     reported_by = models.ForeignKey('users.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='reported_issues')
     title = models.CharField(max_length=300)
     description = models.TextField(blank=True)

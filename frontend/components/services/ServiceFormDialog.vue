@@ -5,7 +5,15 @@
       <v-card-text>
         <v-row dense>
           <v-col cols="12">
-            <v-select v-model="form.vehicle" :items="vehicleOptions" item-title="display_name" item-value="id" label="Vehicle *" variant="outlined" density="compact" hide-details="auto" :error-messages="errors.vehicle" />
+            <v-select v-model="form.vehicle" :items="vehicleOptions" item-title="display_name" item-value="id" label="Vehicle *" variant="outlined" density="compact" hide-details="auto" :error-messages="errors.vehicle">
+              <template #selection="{ item }">
+                <span class="font-weight-medium">{{ item.raw.display_name }}</span>
+                <span v-if="item.raw.license_plate" class="text-caption text-medium-emphasis ml-2">· {{ item.raw.license_plate }}</span>
+              </template>
+              <template #item="{ item, props }">
+                <v-list-item v-bind="props" :title="item.raw.display_name" :subtitle="item.raw.license_plate || 'No plate'" />
+              </template>
+            </v-select>
           </v-col>
           <v-col cols="6">
             <v-select v-model="form.service_type" :items="serviceTypes" item-title="label" item-value="value" label="Service Type *" variant="outlined" density="compact" hide-details="auto" prepend-inner-icon="mdi-wrench" />

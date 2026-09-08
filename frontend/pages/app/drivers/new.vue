@@ -10,7 +10,7 @@
       </div>
     </div>
 
-    <v-card elevation="0" border rounded="lg" class="pa-6">
+    <v-card elevation="0" border rounded="lg" class="overflow-hidden page-wizard-card">
       <DriverFormWizard @saved="onSaved" @cancel="goBack" />
     </v-card>
   </div>
@@ -34,4 +34,8 @@ function onSaved() { navigateTo('/app/drivers') }
   border-radius: 12px;
 }
 .page-header-title { color: #0f172a; letter-spacing: -0.01em; }
+.page-wizard-card {
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06) !important;
+}
 </style>

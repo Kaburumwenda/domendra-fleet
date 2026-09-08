@@ -175,6 +175,9 @@
                         :rules="[v => !!v || 'Required']" append-inner-icon="mdi-crosshairs-gps" @click:append-inner="useCurrentLocation('dropoff')" />
                     </v-col>
                     <v-col cols="6" md="4">
+                      <v-text-field v-model="form.dropoff_datetime" type="datetime-local" label="Drop-off Date and Time" density="comfortable" variant="outlined" prepend-inner-icon="mdi-clock-time-four-outline" hide-details="auto" hint="Leave blank to auto-calc from duration" persistent-hint />
+                    </v-col>
+                    <v-col cols="6" md="4">
                       <v-text-field v-model="form.dropoff_lat" type="number" label="Lat" density="compact" variant="outlined" hide-details />
                     </v-col>
                     <v-col cols="6" md="4">
@@ -244,7 +247,15 @@
               </div>
               <v-row dense class="mb-2">
                 <v-col cols="12" md="6">
-                  <v-select v-model="form.vehicle" :items="availableVehicles" item-title="label" item-value="value" label="Vehicle" density="comfortable" variant="outlined" prepend-inner-icon="mdi-car" hide-details clearable placeholder="Select or leave unassigned" />
+                  <v-select v-model="form.vehicle" :items="availableVehicles" item-title="label" item-value="value" label="Vehicle" density="comfortable" variant="outlined" prepend-inner-icon="mdi-car" hide-details clearable placeholder="Select or leave unassigned">
+                    <template #selection="{ item }">
+                      <span class="font-weight-medium">{{ item.raw.label }}</span>
+                      <span v-if="item.raw.license_plate" class="text-caption text-medium-emphasis ml-2">· {{ item.raw.license_plate }}</span>
+                    </template>
+                    <template #item="{ item, props }">
+                      <v-list-item v-bind="props" :title="item.raw.label" :subtitle="item.raw.license_plate || 'No plate'" />
+                    </template>
+                  </v-select>
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-select v-model="form.driver" :items="availableDrivers" item-title="label" item-value="value" label="Driver" density="comfortable" variant="outlined" prepend-inner-icon="mdi-account-tie" hide-details clearable placeholder="Select or leave unassigned" />
@@ -259,7 +270,7 @@
                 <span>Fare Breakdown</span>
               </div>
               <v-row dense>
-                <v-col cols="6" md="3"><v-text-field v-model.number="form.base_fare" type="number" min="0" label="Base Fare" :prefix="currencySymbol" density="comfortable" variant="outlined" prepend-inner-icon="mdi-tag" hide-details /></v-col>
+                <v-col cols="6" md="3"><v-text-field v-model.number="form.base_fare" type="number" min="0" label="Base Fare *" :prefix="currencySymbol" density="comfortable" variant="outlined" prepend-inner-icon="mdi-tag" hide-details="auto" :rules="[v => (v !== '' && v != null && Number(v) > 0) || 'Required']" /></v-col>
                 <v-col cols="6" md="3"><v-text-field v-model.number="form.distance_km" type="number" min="0" label="Distance (km)" density="comfortable" variant="outlined" prepend-inner-icon="mdi-map-marker-distance" hide-details /></v-col>
                 <v-col cols="6" md="3"><v-text-field v-model.number="form.tolls_amount" type="number" min="0" label="Tolls" :prefix="currencySymbol" density="comfortable" variant="outlined" prepend-inner-icon="mdi-boom-gate" hide-details /></v-col>
                 <v-col cols="6" md="3"><v-text-field v-model.number="form.parking_amount" type="number" min="0" label="Parking" :prefix="currencySymbol" density="comfortable" variant="outlined" prepend-inner-icon="mdi-parking" hide-details /></v-col>
@@ -403,7 +414,7 @@
           <v-btn variant="text" :disabled="step === '1'" prepend-icon="mdi-chevron-left" @click="step = String(Math.max(1, Number(step) - 1))">Back</v-btn>
           <div class="d-flex ga-2">
             <v-btn v-if="step !== '4'" color="primary" append-icon="mdi-chevron-right" @click="step = String(Number(step) + 1)">Continue</v-btn>
-            <v-btn v-else color="primary" prepend-icon="mdi-check-circle" :loading="saving" @click="submit">Create Transfer</v-btn>
+            <v-btn v-else color="primary" prepend-icon="mdi-check-circle" :loading="saving" :disabled="saving" @click="submit">Create Transfer</v-btn>
           </div>
         </div>
       </v-stepper>
@@ -732,7 +743,7 @@ async function loadVehicles() {
     const { $api } = useNuxtApp()
     const data: any = await $api('/vehicles/vehicles/', { query: { page_size: 100 } })
     const items = data.results || data
-    availableVehicles.value = items.map((v: any) => ({ label: v.display_name || v.license_plate || `Vehicle #${v.id}`, value: v.id }))
+    availableVehicles.value = items.map((v: any) => ({ label: v.display_name || `Vehicle #${v.id}`, value: v.id, license_plate: v.license_plate || '' }))
   } catch (e) {
     console.error('Failed to load vehicles:', e)
     availableVehicles.value = []
@@ -752,14 +763,25 @@ async function loadDrivers() {
 }
 
 async function submit() {
-  if (!form.passenger_name) { $swal.fire({ icon: 'warning', title: 'Required', text: 'Passenger name is required.' }); return }
-  if (!form.pickup_name || !form.dropoff_name) { $swal.fire({ icon: 'warning', title: 'Required', text: 'Pickup and drop-off names are required.' }); return }
-  if (!form.pickup_datetime) { $swal.fire({ icon: 'warning', title: 'Required', text: 'Pickup date & time is required.' }); return }
-
+  if (saving.value) return
   saving.value = true
   try {
+    if (!form.passenger_name) { $swal.fire({ icon: 'warning', title: 'Required', text: 'Passenger name is required.' }); return }
+    if (!form.pickup_name || !form.dropoff_name) { $swal.fire({ icon: 'warning', title: 'Required', text: 'Pickup and drop-off names are required.' }); return }
+    if (!form.pickup_datetime) { $swal.fire({ icon: 'warning', title: 'Required', text: 'Pickup date & time is required.' }); return }
+    if (!form.base_fare || Number(form.base_fare) <= 0) { $swal.fire({ icon: 'warning', title: 'Required', text: 'Base fare is required and must be greater than 0.' }); return }
+
     form.total_amount = computedTotal.value
     const payload = { ...form }
+    // Convert datetime-local strings to ISO 8601 and drop empty datetime fields
+    const dateTimeFields = ['pickup_datetime', 'dropoff_datetime', 'return_datetime']
+    for (const dt of dateTimeFields) {
+      if (payload[dt]) {
+        payload[dt] = new Date(payload[dt]).toISOString()
+      } else {
+        delete payload[dt]
+      }
+    }
     // Clean undefined/null numbers
     Object.keys(payload).forEach(k => {
       if (payload[k] === undefined) delete payload[k]

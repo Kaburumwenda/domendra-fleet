@@ -20,8 +20,8 @@ class PartUsageInline(admin.TabularInline):
 
 @admin.register(Issue)
 class IssueAdmin(admin.ModelAdmin):
-    list_display = ('title', 'vehicle', 'status', 'priority', 'created_at')
-    list_filter = ('status', 'priority')
+    list_display = ('title', 'vehicle', 'vendor', 'status', 'priority', 'created_at')
+    list_filter = ('status', 'priority', 'vendor')
     search_fields = ('title', 'description')
 
 

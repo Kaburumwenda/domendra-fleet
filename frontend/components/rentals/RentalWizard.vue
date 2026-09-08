@@ -1131,7 +1131,7 @@
           <v-btn variant="text" @click="goBack">Cancel</v-btn>
           <v-btn v-if="current < steps.length - 1" color="primary" prepend-icon="mdi-arrow-right" @click="next">Next</v-btn>
           <template v-else>
-            <v-btn v-if="!props.editing" variant="tonal" color="grey-darken-1" prepend-icon="mdi-content-save-outline" :loading="savingDraft" @click="saveAsDraft">
+            <v-btn v-if="!props.editing" variant="tonal" color="grey-darken-1" prepend-icon="mdi-content-save-outline" :loading="savingDraft" :disabled="saving" @click="saveAsDraft">
               Save as Draft
             </v-btn>
             <v-select
@@ -1144,8 +1144,9 @@
               hide-details
               attach
               style="min-width: 160px; z-index: 9999;"
+              :disabled="saving"
             />
-            <v-btn color="success" size="large" prepend-icon="mdi-check-circle-outline" :loading="saving" @click="save">
+            <v-btn color="success" size="large" prepend-icon="mdi-check-circle-outline" :loading="saving" :disabled="saving" @click="save">
               {{ props.editing ? 'Update Agreement' : 'Create Agreement' }}
             </v-btn>
           </template>
@@ -2045,6 +2046,12 @@ async function doSave(targetStatus: string) {
     title: t.title || '',
     text: t.text || '',
   }))
+
+  // Guard against double-submit: if already saving, bail out
+  if (saving.value || savingDraft.value) return
+
+  // Guard against double-submit: if already saving, bail out
+  if (saving.value || savingDraft.value) return
 
   if (isDraft) { savingDraft.value = true } else { saving.value = true }
   try {

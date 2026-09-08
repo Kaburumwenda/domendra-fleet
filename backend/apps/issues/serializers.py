@@ -23,6 +23,7 @@ class IssuePhotoSerializer(serializers.ModelSerializer):
 
 class IssueSerializer(serializers.ModelSerializer):
     vehicle_name = serializers.CharField(source='vehicle.display_name', read_only=True)
+    vendor_name = serializers.CharField(source='vendor.full_name', read_only=True)
     reported_by_name = serializers.CharField(source='reported_by.full_name', read_only=True)
     has_work_order = serializers.BooleanField(read_only=True)
     work_order_id = serializers.IntegerField(read_only=True)

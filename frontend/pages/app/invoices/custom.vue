@@ -145,79 +145,87 @@
                 <!-- Header row -->
                 <div class="li-row li-header">
                   <div class="li-col li-desc">Description</div>
+                  <div class="li-col li-action"></div>
+                </div>
+                <div class="li-row li-header li-sub-header">
                   <div class="li-col li-vehicle">Vehicle</div>
                   <div class="li-col li-qty text-center">Qty</div>
                   <div class="li-col li-unit text-end">Rate</div>
                   <div class="li-col li-total text-end">Amount</div>
-                  <div class="li-col li-action"></div>
                 </div>
                 <!-- Body rows -->
-                <div v-for="(item, i) in lineItems" :key="i" class="li-row li-body">
-                  <div class="li-col li-desc">
-                    <v-text-field
-                      v-model="item.description"
-                      placeholder="Enter description…"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                      class="li-input"
-                    />
-                  </div>
-                  <div class="li-col li-vehicle">
-                    <v-autocomplete
-                      v-model="item.vehicle_id"
-                      :items="vehicleOptions"
-                      item-title="label"
-                      item-value="id"
-                      placeholder="Select…"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                      clearable
-                      class="li-input li-input-vehicle"
-                      :loading="vehiclesLoading"
-                    />
-                  </div>
-                  <div class="li-col li-qty">
-                    <v-text-field
-                      v-model.number="item.quantity"
-                      type="number"
-                      min="1"
-                      density="compact"
-                      variant="outlined"
-                      hide-details
-                      class="li-input li-input-qty"
-                      @input="recalcLine(i)"
-                    />
-                  </div>
-                  <div class="li-col li-unit">
-                    <div class="rate-cell">
+                <div v-for="(item, i) in lineItems" :key="i" class="li-item-block">
+                  <!-- Description row (full width) -->
+                  <div class="li-row li-body">
+                    <div class="li-col li-desc">
                       <v-text-field
-                        v-model.number="item.unit_amount"
-                        type="number"
-                        min="0"
+                        v-model="item.description"
+                        placeholder="Enter description…"
                         density="compact"
                         variant="outlined"
                         hide-details
-                        class="li-input li-input-unit"
-                        :prefix="currencySymbol"
-                        @input="recalcLine(i)"
-                      />
-                      <v-select
-                        v-model="item.rate_period"
-                        :items="ratePeriodOptions"
-                        density="compact"
-                        variant="outlined"
-                        hide-details
-                        class="li-input li-input-period"
+                        class="li-input"
                       />
                     </div>
+                    <div class="li-col li-action text-center">
+                      <v-btn icon="mdi-delete-outline" size="x-small" variant="text" color="error" @click="removeLineItem(i)" :disabled="lineItems.length &lt;= 1" />
+                    </div>
                   </div>
-                  <div class="li-col li-total text-end">
-                    <span class="li-total-text">{{ currencySymbol }}{{ (Number(item.total_amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
-                  </div>
-                  <div class="li-col li-action text-center">
-                    <v-btn icon="mdi-delete-outline" size="x-small" variant="text" color="error" @click="removeLineItem(i)" :disabled="lineItems.length &lt;= 1" />
+                  <!-- Detail row: Vehicle, Qty, Rate, Amount -->
+                  <div class="li-row li-body li-detail-row">
+                    <div class="li-col li-vehicle">
+                      <v-autocomplete
+                        v-model="item.vehicle_id"
+                        :items="vehicleOptions"
+                        item-title="label"
+                        item-value="id"
+                        placeholder="Select…"
+                        density="compact"
+                        variant="outlined"
+                        hide-details
+                        clearable
+                        class="li-input li-input-vehicle"
+                        :loading="vehiclesLoading"
+                      />
+                    </div>
+                    <div class="li-col li-qty">
+                      <v-text-field
+                        v-model.number="item.quantity"
+                        type="number"
+                        min="1"
+                        density="compact"
+                        variant="outlined"
+                        hide-details
+                        class="li-input li-input-qty"
+                        @input="recalcLine(i)"
+                      />
+                    </div>
+                    <div class="li-col li-unit">
+                      <div class="rate-cell">
+                        <v-text-field
+                          v-model.number="item.unit_amount"
+                          type="number"
+                          min="0"
+                          density="compact"
+                          variant="outlined"
+                          hide-details
+                          class="li-input li-input-unit"
+                          :prefix="currencySymbol"
+                          @input="recalcLine(i)"
+                        />
+                        <v-select
+                          v-model="item.rate_period"
+                          :items="ratePeriodOptions"
+                          density="compact"
+                          variant="outlined"
+                          hide-details
+                          class="li-input li-input-period"
+                        />
+                      </div>
+                    </div>
+                    <div class="li-col li-total text-end">
+                      <span class="li-total-text">{{ currencySymbol }}{{ (Number(item.total_amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -499,18 +507,18 @@ const stepFocus = ref(1)
 
 /* ── Branding color ── */
 const brandColorPresets = [
+  { label: 'Rose', value: '#e11d48' },
   { label: 'Teal', value: '#0d9488' },
   { label: 'Indigo', value: '#4f46e5' },
   { label: 'Blue', value: '#2563eb' },
   { label: 'Emerald', value: '#059669' },
   { label: 'Cyan', value: '#0891b2' },
   { label: 'Violet', value: '#7c3aed' },
-  { label: 'Rose', value: '#e11d48' },
   { label: 'Orange', value: '#ea580c' },
   { label: 'Amber', value: '#d97706' },
   { label: 'Slate', value: '#334155' },
 ]
-const brandColor = ref('#0d9488')
+const brandColor = ref('#e11d48')
 
 /** Parse a hex color (#rrggbb) into r,g,b integers */
 function hexToRgb(hex: string): [number, number, number] {
@@ -810,7 +818,7 @@ async function loadInvoiceForEdit() {
     invoiceTo.email = ito.email || ''
     invoiceTo.phone = ito.phone || ''
     invoiceTo.address = ito.address || ''
-    brandColor.value = inv.branding_color || '#0d9488'
+    brandColor.value = inv.branding_color || '#e11d48'
     dueDate.value = inv.due_date || ''
     notes.value = inv.notes || ''
     discountTotal.value = Number(inv.discount_total || 0)
@@ -993,8 +1001,14 @@ onMounted(async () => {
   align-items: center;
   min-height: 44px;
 }
-.li-row + .li-row {
+.li-item-block {
   border-top: 1px solid #f1f5f9;
+}
+.li-item-block:first-of-type {
+  border-top: none;
+}
+.li-detail-row {
+  background: #f8fafc;
 }
 .li-header {
   background: var(--brand-tint);
@@ -1004,6 +1018,12 @@ onMounted(async () => {
   letter-spacing: 0.04em;
   color: var(--brand);
   min-height: 38px;
+}
+.li-sub-header {
+  background: #f8fafc;
+  font-size: 0.65rem;
+  min-height: 32px;
+  border-top: 1px solid #f1f5f9;
 }
 .li-header .li-col {
   padding: 8px 10px;
@@ -1016,11 +1036,11 @@ onMounted(async () => {
   align-items: center;
 }
 .li-desc { flex: 1 1 120px; min-width: 80px; }
-.li-vehicle { width: 180px; min-width: 120px; }
+.li-vehicle { flex: 1 1 160px; min-width: 120px; }
 .li-qty { width: 108px; justify-content: center; }
-.li-unit { width: 280px; justify-content: flex-end; }
+.li-unit { flex: 1 1 200px; justify-content: flex-end; }
 .li-total { width: 110px; justify-content: flex-end; }
-.li-action { width: 40px; }
+.li-action { width: 40px; flex-shrink: 0; }
 .li-input-qty :deep(input) { text-align: center; }
 .li-input-unit :deep(input) { text-align: right; }
 .li-input-vehicle :deep(.v-field__input) { font-size: 0.75rem; padding-top: 8px; min-height: 32px; }

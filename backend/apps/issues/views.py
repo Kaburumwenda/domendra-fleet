@@ -20,9 +20,9 @@ from .serializers import (
 
 
 class IssueViewSet(viewsets.ModelViewSet):
-    queryset = Issue.objects.select_related('vehicle', 'reported_by', 'work_order')
+    queryset = Issue.objects.select_related('vehicle', 'vendor', 'reported_by', 'work_order')
     serializer_class = IssueSerializer
-    filterset_fields = ['status', 'priority', 'vehicle', 'reported_by']
+    filterset_fields = ['status', 'priority', 'vehicle', 'vendor', 'reported_by']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'updated_at', 'priority']
 

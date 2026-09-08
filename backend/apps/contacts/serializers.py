@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.http import QueryDict
 
 from .models import (
     Contact,
@@ -107,10 +108,16 @@ class ContactSerializer(serializers.ModelSerializer):
         # back into native types before DRF validation runs.
         import json
         # Work on a mutable copy so we never touch the original request data.
-        try:
-            data = data.copy() if hasattr(data, 'copy') else dict(data)
-        except Exception:
-            data = dict(data)
+        # If it's a QueryDict, flatten to a plain dict so nested-serializer
+        # field.get_value() calls .get() (not .getlist()) and sees a dict
+        # rather than a one-element list wrapper.
+        if isinstance(data, QueryDict):
+            data = {k: data.get(k) for k in data}
+        else:
+            try:
+                data = data.copy() if hasattr(data, 'copy') else dict(data)
+            except Exception:
+                data = dict(data)
         for key in ('driver_profile', 'vendor_profile'):
             val = data.get(key)
             if isinstance(val, str) and val.strip():

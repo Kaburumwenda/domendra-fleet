@@ -298,7 +298,7 @@ async function loadStats() {
 async function loadTransfers() {
   loading.value = true
   try {
-    const params: any = { page: page.value, page_size: itemsPerPage.value }
+    const params: any = { page: page.value, page_size: itemsPerPage.value, ordering: '-created_at' }
     if (debouncedSearch.value) params.search = debouncedSearch.value
     if (statusFilter.value) params.status = statusFilter.value
     if (classFilter.value) params.service_class = classFilter.value
